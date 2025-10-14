@@ -4,13 +4,14 @@ import { initialSiteImages } from '../../constants';
 
 // Upload to backend and return absolute URL
 const uploadToBackend = async (file: File): Promise<string> => {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
     const fd = new FormData();
     fd.append('file', file);
-    const res = await fetch('http://localhost:8000/api/upload', { method: 'POST', body: fd });
+    const res = await fetch(`${apiUrl}/api/upload`, { method: 'POST', body: fd });
     const json = await res.json();
     if (!json?.success || !json?.url) throw new Error('Upload failed');
     // Return full URL for direct use in <img>
-    return `http://localhost:8000${json.url}`;
+    return `${apiUrl}${json.url}`;
 }
 
 interface ImageManagerProps {
@@ -49,7 +50,8 @@ export const ImageManager: React.FC<ImageManagerProps> = ({ currentImages, onUpd
     const handleSave = async () => {
         try {
             // Persist to backend site-images
-            const res = await fetch('http://localhost:8000/api/site-images', {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const res = await fetch(`${apiUrl}/api/site-images`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(images)

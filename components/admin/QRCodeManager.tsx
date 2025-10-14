@@ -73,9 +73,10 @@ const QRCodeManager: React.FC = () => {
       // 1) Upload file to backend
       let uploadedUrl = '';
       if (formData.qr_code_file) {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
         const fd = new FormData();
         fd.append('file', formData.qr_code_file);
-        const uploadRes = await fetch('http://localhost:8000/api/upload', {
+        const uploadRes = await fetch(`${apiUrl}/api/upload`, {
           method: 'POST',
           body: fd
         });
@@ -85,7 +86,8 @@ const QRCodeManager: React.FC = () => {
       }
 
       // 2) Save as site image (qr_code)
-      const saveRes = await fetch('http://localhost:8000/api/site-images', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const saveRes = await fetch(`${apiUrl}/api/site-images`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ qr_code: uploadedUrl })

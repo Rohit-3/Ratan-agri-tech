@@ -37,7 +37,8 @@ const App: React.FC = () => {
     useEffect(() => {
         const fetchSiteImages = async () => {
             try {
-                const res = await fetch('http://localhost:8000/api/site-images');
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+                const res = await fetch(`${apiUrl}/api/site-images`);
                 const json = await res.json();
                 if (json?.success && json?.data) {
                     const { logo, hero, about, qr_code } = json.data;

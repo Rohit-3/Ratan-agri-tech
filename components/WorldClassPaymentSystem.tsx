@@ -110,10 +110,11 @@ const WorldClassPaymentSystem: React.FC<WorldClassPaymentSystemProps> = ({ produ
       let merchantUPI = 'ratanagritech@axisbank';
       let merchantName = 'Ratan Agri Tech';
       try {
-        const res = await fetch('http://localhost:8000/api/site-images');
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const res = await fetch(`${apiUrl}/api/site-images`);
         const json = await res.json();
         if (json?.success && json?.data) {
-          if (json.data.qr_code) qrCode = `http://localhost:8000${json.data.qr_code}`;
+          if (json.data.qr_code) qrCode = `${apiUrl}${json.data.qr_code}`;
         }
       } catch {}
       

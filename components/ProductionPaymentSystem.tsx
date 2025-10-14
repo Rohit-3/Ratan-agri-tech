@@ -98,7 +98,8 @@ const ProductionPaymentSystem: React.FC<ProductionPaymentSystemProps> = ({ produ
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/create-payment', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/api/create-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -126,7 +127,8 @@ const ProductionPaymentSystem: React.FC<ProductionPaymentSystemProps> = ({ produ
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/confirm-payment', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/api/confirm-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -169,7 +171,8 @@ const ProductionPaymentSystem: React.FC<ProductionPaymentSystemProps> = ({ produ
 
   const downloadInvoice = () => {
     if (paymentResponse?.invoice_id) {
-      window.open(`http://localhost:8000/api/invoice/${paymentResponse.invoice_id}`, '_blank');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      window.open(`${apiUrl}/api/invoice/${paymentResponse.invoice_id}`, '_blank');
     }
   };
 
