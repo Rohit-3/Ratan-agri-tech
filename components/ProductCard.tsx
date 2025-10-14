@@ -13,13 +13,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onBuyNow }) => {
   return (
     <>
     <motion.div 
-      className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col group relative h-[320px] w-[340px] mx-auto"
+      className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col group relative h-[340px] w-[340px] mx-auto border border-green-100"
       whileHover={{ y: -6 }}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="relative overflow-hidden h-40 bg-gray-50 flex items-center justify-center">
+      <div className="relative overflow-hidden h-44 bg-green-50 flex items-center justify-center">
         {product.image ? (
           <motion.img 
             src={product.image} 
@@ -54,11 +54,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onBuyNow }) => {
         )}
         <motion.button 
           onClick={handleBuyNow}
-          className="mt-auto w-full bg-black text-white font-extrabold py-3 px-6 rounded-lg hover:bg-gray-900 transition-all duration-300 flex items-center justify-center gap-2 text-base shadow-lg"
+          className="mt-auto w-full bg-white text-black font-extrabold py-3 px-6 rounded-lg border-2 border-black hover:bg-black hover:text-white transition-all duration-300 flex items-center justify-center gap-2 text-base shadow-lg"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.97 }}
         >
-          💳 Buy Now
+          Buy Now
         </motion.button>
       </div>
       {/* Category Badge */}

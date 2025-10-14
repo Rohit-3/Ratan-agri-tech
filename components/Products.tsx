@@ -12,11 +12,11 @@ const Products: React.FC<ProductsProps> = ({ products, onBuyNow }) => {
         threshold: 0.1
     });
 
-    // Only show up to 4 products, regardless of category
+    // Show all products; filter by category if selected
     const filteredProducts = (selectedCategory === ProductCategory.All
         ? products
         : products.filter(p => p.category === selectedCategory)
-    ).slice(0, 4);
+    );
 
     const containerVariants = {
         hidden: { opacity: 0, y: 20 },
@@ -31,7 +31,7 @@ const Products: React.FC<ProductsProps> = ({ products, onBuyNow }) => {
     };
 
     return (
-        <section id="products" className="py-16 bg-gradient-to-b from-gray-50 to-white">
+        <section id="products" className="py-16 bg-gradient-to-b from-green-50 to-white">
             <div className="container mx-auto px-4 md:px-6">
                 {/* Product Benefits Section */}
                 <motion.div 
@@ -48,15 +48,15 @@ const Products: React.FC<ProductsProps> = ({ products, onBuyNow }) => {
                         Our products are designed to revolutionize agriculture for everyone—from small family farms to large commercial operations. By integrating nano processing, AI-driven analytics, and smart IoT features, we help farmers boost productivity, reduce manual labor, and achieve better yields with less effort.
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
-                        <div className="bg-white rounded-xl shadow-lg p-6 hover-grow">
+                        <div className="bg-white rounded-xl shadow-lg p-6 hover-grow border border-green-100">
                             <h3 className="text-xl font-bold text-primary mb-2">Nano Processing</h3>
                             <p className="text-gray-600">Precision soil and crop management for healthier harvests and sustainable farming.</p>
                         </div>
-                        <div className="bg-white rounded-xl shadow-lg p-6 hover-grow">
+                        <div className="bg-white rounded-xl shadow-lg p-6 hover-grow border border-green-100">
                             <h3 className="text-xl font-bold text-primary mb-2">AI & Smart Analytics</h3>
                             <p className="text-gray-600">Real-time insights and recommendations to maximize efficiency and minimize waste.</p>
                         </div>
-                        <div className="bg-white rounded-xl shadow-lg p-6 hover-grow">
+                        <div className="bg-white rounded-xl shadow-lg p-6 hover-grow border border-green-100">
                             <h3 className="text-xl font-bold text-primary mb-2">IoT Integration</h3>
                             <p className="text-gray-600">Remote monitoring and control for smarter, safer, and more connected farming.</p>
                         </div>
@@ -87,7 +87,7 @@ const Products: React.FC<ProductsProps> = ({ products, onBuyNow }) => {
 
                 {/* Products Grid */}
                 <motion.div 
-                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-4 gap-8 auto-rows-fr"
+                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-8 auto-rows-fr"
                     variants={containerVariants}
                 >
                     {filteredProducts.length > 0 ? (

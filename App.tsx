@@ -35,9 +35,35 @@ const App: React.FC = () => {
 
     // Load persistent site images from backend on mount
     useEffect(() => {
+        // Migration: clear stale siteImages pointing to localhost or /uploads so bundled images take effect
+        try {
+            const stored = localStorage.getItem('siteImages');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                const invalid = (v: unknown) => typeof v === 'string' && (v.includes('localhost') || v.includes('/uploads/'));
+                if (parsed && (invalid(parsed.logo) || invalid(parsed.hero) || invalid(parsed.about) || invalid(parsed.qrCode))) {
+                    localStorage.removeItem('siteImages');
+                }
+            }
+        } catch {}
+
+        // Migration: replace any non-matching catalog with the new curated 6-product catalog
+        try {
+            const storedProducts = localStorage.getItem('products');
+            if (storedProducts) {
+                const parsed = JSON.parse(storedProducts);
+                const targetNames = new Set(initialProducts.map(p => p.name));
+                const invalidList = !Array.isArray(parsed) || parsed.length !== initialProducts.length || parsed.some((p: any) => !p?.name || !targetNames.has(p.name));
+                if (invalidList) {
+                    localStorage.setItem('products', JSON.stringify(initialProducts));
+                    setProducts(initialProducts);
+                }
+            }
+        } catch {}
+
         const fetchSiteImages = async () => {
             try {
-                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+                const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
                 const res = await fetch(`${apiUrl}/api/site-images`);
                 const json = await res.json();
                 if (json?.success && json?.data) {

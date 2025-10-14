@@ -111,11 +111,14 @@ const WorldClassPaymentSystem: React.FC<WorldClassPaymentSystemProps> = ({ produ
       let merchantUPI = 'ratanagritech@axisbank';
       let merchantName = 'Ratan Agri Tech';
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
         const res = await fetch(`${apiUrl}/api/site-images`);
         const json = await res.json();
         if (json?.success && json?.data) {
-          if (json.data.qr_code) qrCode = `${apiUrl}${json.data.qr_code}`;
+          if (json.data.qr_code) {
+            // If backend returns absolute URL, use as is; else prefix with same origin
+            qrCode = json.data.qr_code.startsWith('http') ? json.data.qr_code : `${apiUrl}${json.data.qr_code}`;
+          }
         }
       } catch {}
       

@@ -18,7 +18,7 @@ const Hero: React.FC<HeroProps> = ({ heroImage, products, onBuyNow }) => {
 		return (
 			<>
 				<section id="hero" className="relative min-h-[80vh] bg-cover bg-center text-white overflow-hidden flex items-center justify-center" style={{ backgroundImage: `url('${heroImage}')` }}>
-					<div className="absolute inset-0 bg-gradient-to-br from-black/70 via-gray-900/60 to-primary/40 animate-fadeIn"></div>
+					<div className="absolute inset-0 bg-gradient-to-br from-black/60 via-primary/50 to-secondary/40 animate-fadeIn"></div>
 					<div className="absolute inset-0 bg-gradient-to-t from-white/10 via-transparent to-transparent"></div>
 					<motion.div 
 						initial={{ opacity: 0, y: 40 }}
@@ -181,8 +181,18 @@ const Hero: React.FC<HeroProps> = ({ heroImage, products, onBuyNow }) => {
 					</div>
 				</section>
 
+				{/* Section Divider with badge */}
+				<div className="w-full flex items-center justify-center my-10">
+					<div className="w-full max-w-6xl relative">
+						<div className="border-t-2 border-gray-200" />
+						<div className="absolute left-1/2 -translate-x-1/2 -top-4 bg-white px-4 py-1 rounded-full shadow text-primary font-bold border border-primary/30">
+							<span className="mr-2">🌿</span> Growing With Farmers
+						</div>
+					</div>
+				</div>
+
 				{/* Services Section */}
-				<section className="py-16 bg-gray-50">
+				<section className="py-16 bg-green-50/70 border-t-4 border-primary">
 					<div className="container mx-auto px-4 md:px-8">
 						<motion.div 
 							className="text-center mb-12"

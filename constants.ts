@@ -96,35 +96,7 @@ export const initialProducts: Product[] = [
     },
     price: 22000,
   },
-  {
-    id: 7,
-    name: 'LEO Cordless Chain Saw',
-    category: ProductCategory.Chainsaw,
-    image: 'https://images.unsplash.com/photo-1611094504499-563d0aa78a2d?q=80&w=2070&auto=format&fit=crop',
-    description: 'Enjoy the freedom of a lightweight and powerful cordless chainsaw. Perfect for easy trimming, pruning, and cutting firewood without the hassle of cords or gasoline.',
-    specifications: {
-      'Battery Power': '900w',
-      'Battery Capacity': '3000mah',
-      Voltage: '21v',
-      'Chain Speed': '6m/s',
-      'Guide Bar Length': '12 inch',
-    },
-    price: 8500,
-  },
-  {
-      id: 8,
-      name: 'Power Weeder 212cc',
-      category: ProductCategory.PowerTiller,
-      image: 'https://images.unsplash.com/photo-1625805113883-7a6b5a34e4f6?q=80&w=1974&auto=format&fit=crop',
-      description: 'Boost your farm\'s productivity with this robust 212cc power weeder. It provides excellent performance for soil preparation, weed removal, and inter-cultivation in large fields and gardens.',
-      specifications: {
-        Engine: '212cc OHV',
-        Power: '7.5 HP',
-        Fuel: 'Petrol',
-        Blades: 'Hardened Steel',
-      },
-      price: 52000,
-  }
+  
 ];
 
 export const categories = [
