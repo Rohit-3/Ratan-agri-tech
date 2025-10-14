@@ -5,6 +5,8 @@ import ProductForm from './ProductForm';
 import { ImageManager } from './ImageManager';
 import QRCodeManager from './QRCodeManager';
 import PaymentsTable from './PaymentsTable';
+import heroImage from '../../image/hero.png';
+import logoImage from '../../image/logo.jpg';
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ 
     products, 
@@ -37,15 +39,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                             <h3 className="text-lg font-semibold text-gray-700 mb-3">Logo</h3>
                             <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
                                 <img 
-                                    src={siteImages.logo} 
+                                    src={logoImage} 
                                     alt="Site Logo" 
                                     className="h-16 w-16 mx-auto object-contain rounded-full"
-                                    onError={(e) => {
-                                        (e.currentTarget as HTMLImageElement).style.display = 'none';
-                                        (e.currentTarget as HTMLImageElement).nextElementSibling!.style.display = 'block';
-                                    }}
                                 />
-                                <div className="hidden text-gray-500 text-sm">Logo not available</div>
                             </div>
                         </div>
                         
@@ -54,15 +51,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                             <h3 className="text-lg font-semibold text-gray-700 mb-3">Hero Image</h3>
                             <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
                                 <img 
-                                    src={siteImages.hero} 
+                                    src={heroImage} 
                                     alt="Hero Image" 
                                     className="h-24 w-full object-cover rounded-lg"
-                                    onError={(e) => {
-                                        (e.currentTarget as HTMLImageElement).style.display = 'none';
-                                        (e.currentTarget as HTMLImageElement).nextElementSibling!.style.display = 'block';
-                                    }}
                                 />
-                                <div className="hidden text-gray-500 text-sm">Hero image not available</div>
                             </div>
                         </div>
                     </div>
