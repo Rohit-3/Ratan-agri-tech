@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import localQrCode from '../image/qr code.jpg';
 import { motion } from 'framer-motion';
 
 interface WorldClassPaymentSystemProps {
@@ -118,9 +119,9 @@ const WorldClassPaymentSystem: React.FC<WorldClassPaymentSystemProps> = ({ produ
         }
       } catch {}
       
-      // If no QR code from admin, use placeholder
+      // If no QR code from admin, use local bundled QR image
       if (!qrCode) {
-        qrCode = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+        qrCode = localQrCode;
       }
       
       // Generate UPI link
@@ -445,7 +446,7 @@ Thank you for your business!
               {/* QR Code */}
               <div className="flex justify-center mb-8">
                 <div className="bg-white p-8 rounded-2xl shadow-2xl border-4 border-gray-200">
-                  {paymentResponse.qr_code && paymentResponse.qr_code !== 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' ? (
+                  {paymentResponse.qr_code ? (
                     <div className="w-64 h-64 flex items-center justify-center rounded-xl">
                       <img
                         src={paymentResponse.qr_code}

@@ -1,87 +1,98 @@
 import { ProductCategory, Product, SiteImages } from './types';
+import heroImageFile from './image/hero.png';
+import logoImageFile from './image/logo.jpg';
+import qrCodeImageFile from './image/qr code.jpg';
+import product1Image from './image/product1.png';
+import product2Image from './image/product2.png';
+import product3Image from './image/product3.png';
+import product4Image from './image/product4.png';
+import product5Image from './image/product5.png';
+import product6Image from './image/product6.png';
 
 export const initialProducts: Product[] = [
   {
     id: 1,
-    name: 'Power Tiller - Model A',
-    category: ProductCategory.PowerTiller,
-    image: 'https://images.unsplash.com/photo-1621237191147-4f40f437af13?q=80&w=2070&auto=format&fit=crop',
-    description: 'Experience unmatched efficiency with our high-performance power tiller, specifically designed for the demanding conditions of small to medium-sized farms. Its robust build and user-friendly operation make soil preparation a breeze.',
-    specifications: {
-      Engine: '7 HP Petrol',
-      'Tilling Width': '24 inches',
-      'Tilling Depth': '8 inches',
-      Gears: '2 Forward, 1 Reverse',
-    },
-    price: 45000,
-  },
-  {
-    id: 2,
-    name: 'Mitsubishi Powered Brushcutter TU-43',
+    name: 'Mitsubishi Powered Brushcutter - TU-43',
     category: ProductCategory.BrushCutter,
-    image: 'https://images.unsplash.com/photo-1627887992985-a88b5683a6c2?q=80&w=1974&auto=format&fit=crop',
-    description: 'Tackle the toughest overgrowth with this powerful and reliable brushcutter. Featuring a world-class Mitsubishi engine, it\'s engineered for heavy-duty clearing tasks, ensuring durability and peak performance.',
+    image: product1Image,
+    description: 'Reliable Mitsubishi-powered TU-43 brushcutter for tough clearing tasks with strong performance and durability.',
     specifications: {
-      Power: '2.1 HP, 2 Stroke Air Cooled petrol engine',
-      Displacement: '42.7cc',
-      Accessories: 'Double Harness Belt, Goggles, Tool kit',
-      Blades: 'Trimmer Head, 3 Teeth Metal blade',
+      Power: '2 Stroke, Air Cooled',
+      Notes: 'Mitsubishi TU-43 engine',
     },
     price: 12500,
   },
   {
-    id: 3,
-    name: 'Honda Powered Brushcutter GX-35',
+    id: 2,
+    name: 'Riga-Italy Side Pack Brushcutter CG-400',
     category: ProductCategory.BrushCutter,
-    image: 'https://images.unsplash.com/photo-1615273529323-2559a45c71a3?q=80&w=2070&auto=format&fit=crop',
-    description: 'Achieve a pristine finish with this efficient side-pack brushcutter. Powered by a dependable Honda 4-stroke engine, it offers smooth operation and lower emissions, making it ideal for both professional landscapers and homeowners.',
+    image: product2Image,
+    description: 'Italian technology CG-400 side-pack brushcutter for professional performance and comfort.',
     specifications: {
-      Power: '1.3 HP, 4 Stroke Air Cooled petrol engine',
-      Displacement: '35.8cc',
-      Accessories: 'Double Harness Belt, Goggles, Tool kit',
-      Blades: 'Trimmer Head, 2 Teeth Metal blade',
+      Power: '2.6 HP, 2 Stroke Air Cooled Petrol Engine',
+      Displacement: '56 CC',
+      Accessories: 'Double Harness Belt, Googles, Tool kit',
+      Blades: 'Trimmer Head, 3 Teeth Metal Blade',
+    },
+    price: 18000,
+  },
+  {
+    id: 3,
+    name: 'Leo Side Pack Brushcutter Model GX-35',
+    category: ProductCategory.BrushCutter,
+    image: product3Image,
+    description: 'Leo GX-35 side-pack brushcutter with smooth 4-stroke operation and low emissions.',
+    specifications: {
+      Power: '1.3 HP, 4 Stroke Air cooled petrol engine',
+      Displacement: '35.8 cc',
+      Accessories: 'Double Harness Belt, Googles, Gloves, Tool kit',
+      Blades: 'Trimmer Head, 3 T Blade, 80 Teeth Blade',
     },
     price: 15000,
   },
   {
     id: 4,
-    name: 'Riga-Italy Side Pack Brushcutter CG-400',
-    category: ProductCategory.BrushCutter,
-    image: 'https://images.unsplash.com/photo-1543786938-c6252a65f57a?q=80&w=2070&auto=format&fit=crop',
-    description: 'Unleash professional-grade power with this high-performance brushcutter. Integrating superior Italian technology, it is designed for maximum durability, efficiency, and comfort during extended use.',
+    name: 'Leo Cordless Chain Saw',
+    category: ProductCategory.Chainsaw,
+    image: product4Image,
+    description: 'Lightweight cordless chain saw with high battery power and smooth cutting performance.',
     specifications: {
-      Power: '2.6 HP, 2 Stroke Air Cooled Petrol Engine',
-      Displacement: '56 CC',
-      Accessories: 'Double Harness Belt, Goggles, Tool kit',
-      Blades: 'Trimmer Head, 3 Teeth Metal blade',
+      'Battery Power': '900w',
+      'Battery Capacity': '3000mah',
+      Voltage: '21v',
+      'Chain Speed': '6m/s',
+      'Guide Bar Length': '12 inch',
     },
     price: 18000,
   },
   {
     id: 5,
-    name: 'Power Tiller - Model B (Green)',
-    category: ProductCategory.PowerTiller,
-    image: 'https://images.unsplash.com/photo-1598319208911-30953a7b68de?q=80&w=2070&auto=format&fit=crop',
-    description: 'A versatile and powerful green power tiller equipped with multiple attachments. This all-in-one machine is perfect for a wide range of agricultural tasks, from primary tilling to inter-cultivation.',
+    name: 'Honda Powered Brushcutter Side Pack GX-35',
+    category: ProductCategory.BrushCutter,
+    image: product5Image,
+    description: 'Honda GX-35 side-pack brushcutter for efficient trimming with dependable 4-stroke engine.',
     specifications: {
-      Engine: '9 HP Diesel',
-      'Tilling Width': '36 inches',
-      'Tilling Depth': '10 inches',
-      Gears: '3 Forward, 1 Reverse',
+      Power: '1.3 HP, 4 Stroke Air cooled petrol engine',
+      Displacement: '35.8 cc',
+      Accessories: 'Double Harness Belt, Googles, Tool kit',
+      Blades: 'Trimmer Head, 2 Teeth Metal blade',
     },
-    price: 75000,
+    price: 15000,
   },
   {
     id: 6,
-    name: 'LEO Earth Auger GX-50',
+    name: 'Leo Earth Auger GX-50',
     category: ProductCategory.EarthAuger,
-    image: 'https://images.unsplash.com/photo-1599493326107-cc66754b220a?q=80&w=1935&auto=format&fit=crop',
-    description: 'Dig with precision and ease using this Honda-powered earth auger. It is the ideal tool for digging holes for fencing, tree planting, and construction projects, delivering reliability and power when you need it most.',
+    image: product6Image,
+    description: 'High-performance earth auger for precise digging with reliable OHC petrol engine.',
     specifications: {
       Engine: 'Single cylinder, OHC petrol engine',
       Displacement: '50 CC',
       'Net power': '1.47 kW (2.0 HP) / 7000 rpm',
       'Drill Bit Optional': '80mm, 100mm, 125mm, 150mm, 200mm',
+      'Fuel Tank Capacity': '0.63 Liter',
+      'Engine OIL Capacity': '0.13 Liter',
+      'G.WEIGHT / N.Weight': '12/10kgs',
     },
     price: 22000,
   },
@@ -131,10 +142,10 @@ export const contactDetails = {
 }
 
 export const initialSiteImages: SiteImages = {
-  logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRz-M9yisP_o1K_aD4c5p-3c_8Xk2Y2s7vQ_g&s',
-  hero: 'https://images.unsplash.com/photo-1492944436997-a6dc1556066d?q=80&w=2070&auto=format&fit=crop',
+  logo: logoImageFile,
+  hero: heroImageFile,
   about: 'https://images.unsplash.com/photo-1560493676-04071c5f467b?q=80&w=1974&auto=format&fit=crop',
-  qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Example',
+  qrCode: qrCodeImageFile,
 };
 
 export const chatbotQA = [
