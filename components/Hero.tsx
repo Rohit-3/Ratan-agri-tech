@@ -32,8 +32,8 @@ const Hero: React.FC<HeroProps> = ({ heroImage, products, onBuyNow }) => {
 							transition={{ duration: 0.8, delay: 0.2 }}
 							className="mx-auto w-full max-w-3xl"
 						>
-							<h1
-								className="font-bold mb-4 text-center text-white drop-shadow-lg tracking-tight leading-snug gradient-text"
+                            <h1
+                                className="font-extrabold mb-4 text-center text-white drop-shadow-[0_4px_6px_rgba(0,0,0,0.8)] tracking-tight leading-snug"
 								style={{ fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', letterSpacing: '-0.01em' }}
 							>
 								<span className="block">
@@ -44,8 +44,8 @@ const Hero: React.FC<HeroProps> = ({ heroImage, products, onBuyNow }) => {
 								</span>
 							</h1>
 						</motion.div>
-					<motion.p 
-						className="text-base md:text-lg max-w-3xl mb-6 text-gray-200 font-normal mx-auto mt-6 animate-slideUp"
+                    <motion.p 
+                        className="text-base md:text-lg max-w-3xl mb-6 text-white font-bold mx-auto mt-6 animate-slideUp drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]"
 							initial={{ opacity: 0 }}
 							animate={{ opacity: 1 }}
 							transition={{ delay: 0.5 }}
@@ -67,9 +67,9 @@ const Hero: React.FC<HeroProps> = ({ heroImage, products, onBuyNow }) => {
 								Explore Our Products
 								<ChevronDownIcon className="w-5 h-5 animate-bounce" />
 							</a>
-						<a 
-							href="#contact" 
-							className="border border-white hover:border-accent text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 hover:shadow-xl hover:bg-accent hover:text-black text-base shadow"
+                        <a 
+                            href="#/contact" 
+                            className="border border-black text-black bg-white font-extrabold py-3 px-6 rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 hover:shadow-xl hover:bg-gray-100 text-base shadow"
 						>
 								Contact Us
 							</a>

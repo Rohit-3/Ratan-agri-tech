@@ -72,10 +72,10 @@ const Products: React.FC<ProductsProps> = ({ products, onBuyNow }) => {
                         <motion.button
                             key={category}
                             onClick={() => setSelectedCategory(category)}
-                            className={`px-6 py-3 rounded-full font-semibold text-sm md:text-base transition-all duration-300 transform hover:scale-105 ${
+                            className={`px-6 py-3 rounded-full font-extrabold text-sm md:text-base transition-all duration-300 transform hover:scale-105 ${
                                 selectedCategory === category
-                                    ? 'bg-primary text-white shadow-lg hover:bg-secondary'
-                                    : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200 hover:border-primary'
+                                    ? 'bg-black text-white shadow-lg hover:bg-gray-900 border-2 border-black'
+                                    : 'bg-white text-black hover:bg-gray-50 border-2 border-black'
                             }`}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}

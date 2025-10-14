@@ -79,7 +79,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                     // notify QR manager to open form
                                     window.dispatchEvent(new Event('open-qr-upload'));
                                 }}
-                                className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary text-sm font-semibold"
+                                className="bg-white text-black border border-black px-4 py-2 rounded-md hover:bg-gray-100 text-sm font-extrabold"
                             >
                                 + Upload QR
                             </button>

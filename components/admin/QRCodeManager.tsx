@@ -73,7 +73,7 @@ const QRCodeManager: React.FC = () => {
       // 1) Upload file to backend
       let uploadedUrl = '';
       if (formData.qr_code_file) {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
         const fd = new FormData();
         fd.append('file', formData.qr_code_file);
         const uploadRes = await fetch(`${apiUrl}/api/upload`, {
@@ -86,7 +86,7 @@ const QRCodeManager: React.FC = () => {
       }
 
       // 2) Save as site image (qr_code)
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
       const saveRes = await fetch(`${apiUrl}/api/site-images`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -230,7 +230,7 @@ const QRCodeManager: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-2 bg-primary text-white rounded-md hover:bg-secondary disabled:opacity-50 font-semibold"
+                className="px-6 py-2 bg-white text-black border border-black rounded-md hover:bg-gray-100 disabled:opacity-50 font-extrabold"
               >
                 {loading ? 'Saving...' : editingQR ? 'Update' : 'Add QR Code'}
               </button>
@@ -283,10 +283,11 @@ const QRCodeManager: React.FC = () => {
 
             {qrCode.qr_code_url && (
               <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-2">QR Code:</p>
+                <p className="text-sm text-black font-extrabold mb-2">QR Code</p>
                 <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center">
                   <img
-                    src={`data:image/png;base64,${qrCode.qr_code_url}`}
+                    src={qrCode.qr_code_url.startsWith('http') ? qrCode.qr_code_url : `${(import.meta.env.VITE_API_URL || window.location.origin)}${qrCode.qr_code_url.startsWith('/') ? qrCode.qr_code_url : `/${qrCode.qr_code_url}`}`}
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/image/qr%20code.jpg'; }}
                     alt="QR Code"
                     className="max-w-full max-h-full object-contain"
                   />

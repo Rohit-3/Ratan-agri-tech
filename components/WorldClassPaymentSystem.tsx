@@ -274,8 +274,8 @@ Thank you for your business!
         exit={{ opacity: 0, scale: 0.9 }}
       >
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b bg-gradient-to-r from-primary to-secondary">
-          <h2 className="text-3xl font-bold text-white">
+        <div className="flex justify-between items-center p-6 border-b bg-white">
+          <h2 className="text-3xl font-extrabold text-black">
             {step === 'form' && '💳 Payment Details'}
             {step === 'payment' && '💰 Complete Payment'}
             {step === 'confirmation' && '✅ Payment Confirmed'}
@@ -442,8 +442,8 @@ Thank you for your business!
               )}
 
               <div className="text-center mb-6">
-                <h3 className="text-2xl font-bold mb-2 text-gray-800">Pay ₹{totalAmount.toLocaleString('en-IN')}</h3>
-                <p className="text-lg text-gray-600">Scan QR code or click the UPI link below</p>
+                <h3 className="text-2xl font-extrabold mb-2 text-black">Pay ₹{totalAmount.toLocaleString('en-IN')}</h3>
+                <p className="text-lg text-gray-800 font-semibold">Scan QR code or click the UPI link below</p>
               </div>
 
               {/* QR Code */}
@@ -453,6 +453,7 @@ Thank you for your business!
                     <div className="w-64 h-64 flex items-center justify-center rounded-xl">
                       <img
                         src={paymentResponse.qr_code}
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = localQrCode; }}
                         alt="UPI QR Code"
                         className="max-w-full max-h-full object-contain"
                       />
@@ -471,7 +472,7 @@ Thank you for your business!
 
               {/* UPI Details */}
               <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-8 rounded-xl mb-8 border-2 border-gray-200">
-                <h4 className="font-bold text-2xl mb-6 text-gray-800 flex items-center">
+                <h4 className="font-extrabold text-2xl mb-6 text-black flex items-center">
                   <span className="text-3xl mr-3">💳</span>
                   Payment Details
                 </h4>

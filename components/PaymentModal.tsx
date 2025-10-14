@@ -36,11 +36,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ product, siteImages, onClos
                         After payment, please contact us at <a href={`tel:${'7726017648'}`} className="text-green-600 font-semibold hover:underline">7726017648</a> with your transaction details to confirm your order.
                     </p>
                 </div>
-                 <div className="bg-gray-50 p-4 rounded-b-lg text-right">
+                <div className="bg-gray-50 p-4 rounded-b-lg text-right">
                     <button 
                         type="button" 
                         onClick={onClose} 
-                        className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg transition duration-300"
+                        className="bg-white border border-black text-black font-extrabold py-2 px-6 rounded-lg transition duration-300 hover:bg-gray-100"
                     >
                         Close
                     </button>

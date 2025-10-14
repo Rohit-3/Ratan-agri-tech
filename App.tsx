@@ -68,11 +68,18 @@ const App: React.FC = () => {
                 const json = await res.json();
                 if (json?.success && json?.data) {
                     const { logo, hero, about, qr_code } = json.data;
+                    const toAbsolute = (value: string | undefined) => {
+                        if (!value) return undefined;
+                        if (value.startsWith('http')) return value;
+                        // ensure leading slash
+                        const path = value.startsWith('/') ? value : `/${value}`;
+                        return `${apiUrl}${path}`;
+                    };
                     const merged: SiteImages = {
-                        logo: logo || siteImages.logo,
-                        hero: hero || siteImages.hero,
+                        logo: toAbsolute(logo) || siteImages.logo,
+                        hero: toAbsolute(hero) || siteImages.hero,
                         about: about || siteImages.about,
-                        qrCode: qr_code || siteImages.qrCode,
+                        qrCode: toAbsolute(qr_code) || siteImages.qrCode,
                     };
                     setSiteImages(merged);
                 }
@@ -184,7 +191,7 @@ const App: React.FC = () => {
                             {adminError && <p className="text-red-500 text-sm mb-2 text-center">{adminError}</p>}
                             <button
                                 type="submit"
-                                className="w-full bg-primary text-white font-bold py-3 rounded hover:bg-secondary transition-all duration-300"
+                                className="w-full bg-white text-black font-extrabold py-3 rounded border border-black hover:bg-gray-100 transition-all duration-300"
                             >
                                 Login
                             </button>
