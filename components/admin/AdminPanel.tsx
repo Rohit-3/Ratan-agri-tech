@@ -28,6 +28,46 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             </header>
 
             <main className="container mx-auto p-6 md:p-8">
+                {/* Static Hero and Logo Preview */}
+                <div className="bg-white rounded-lg shadow-md mb-6 p-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Site Images Preview</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Logo Preview */}
+                        <div className="text-center">
+                            <h3 className="text-lg font-semibold text-gray-700 mb-3">Logo</h3>
+                            <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
+                                <img 
+                                    src={siteImages.logo} 
+                                    alt="Site Logo" 
+                                    className="h-16 w-16 mx-auto object-contain rounded-full"
+                                    onError={(e) => {
+                                        (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                        (e.currentTarget as HTMLImageElement).nextElementSibling!.style.display = 'block';
+                                    }}
+                                />
+                                <div className="hidden text-gray-500 text-sm">Logo not available</div>
+                            </div>
+                        </div>
+                        
+                        {/* Hero Image Preview */}
+                        <div className="text-center">
+                            <h3 className="text-lg font-semibold text-gray-700 mb-3">Hero Image</h3>
+                            <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
+                                <img 
+                                    src={siteImages.hero} 
+                                    alt="Hero Image" 
+                                    className="h-24 w-full object-cover rounded-lg"
+                                    onError={(e) => {
+                                        (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                        (e.currentTarget as HTMLImageElement).nextElementSibling!.style.display = 'block';
+                                    }}
+                                />
+                                <div className="hidden text-gray-500 text-sm">Hero image not available</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Navigation Tabs */}
                 <div className="bg-white rounded-lg shadow-md mb-6">
                     <div className="flex border-b">
