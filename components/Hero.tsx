@@ -44,43 +44,43 @@ const Hero: React.FC<HeroProps> = ({ heroImage, products, onBuyNow }) => {
 								</span>
 							</h1>
 						</motion.div>
-						<motion.p 
-							className="text-xl md:text-2xl max-w-4xl mb-10 text-gray-200 font-medium mx-auto mt-8 animate-slideUp"
+					<motion.p 
+						className="text-base md:text-lg max-w-3xl mb-6 text-gray-200 font-normal mx-auto mt-6 animate-slideUp"
 							initial={{ opacity: 0 }}
 							animate={{ opacity: 1 }}
 							transition={{ delay: 0.5 }}
 						>
-							Transform your farming operations with India's most trusted agricultural machinery. From power tillers to smart brush cutters, we deliver cutting-edge equipment that maximizes productivity and minimizes effort.<br />
-							<span className="text-primary font-bold">Serving 500+ farmers across Rajasthan with 5-star rated equipment and 24/7 support.</span><br />
-							Join the agricultural revolution—where tradition meets innovation.
+						Transform your farming operations with India's most trusted agricultural machinery. From power tillers to smart brush cutters, we deliver cutting-edge equipment that maximizes productivity and minimizes effort.<br />
+						<span className="text-primary font-semibold">Serving 500+ farmers across Rajasthan with 5-star rated equipment and 24/7 support.</span><br />
+						Join the agricultural revolution—where tradition meets innovation.
 						</motion.p>
-						<motion.div
-							className="flex flex-col sm:flex-row gap-4 items-center justify-center mt-2"
+					<motion.div
+						className="flex flex-col sm:flex-row gap-3 items-center justify-center mt-1"
 							initial={{ opacity: 0, y: 20 }}
 							animate={{ opacity: 1, y: 0 }}
 							transition={{ delay: 0.8 }}
 						>
-							<a
-								href="#/products"
-								className="bg-primary hover:bg-secondary text-white font-bold py-4 px-8 rounded-full transition-all duration-300 ease-in-out transform hover:scale-110 hover:shadow-2xl flex items-center gap-2 text-lg shadow-lg"
-							>
+						<a
+							href="#/products"
+							className="bg-primary hover:bg-secondary text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 hover:shadow-xl flex items-center gap-2 text-base shadow"
+						>
 								Explore Our Products
 								<ChevronDownIcon className="w-5 h-5 animate-bounce" />
 							</a>
-							<a 
-								href="#contact" 
-								className="border-2 border-white hover:border-accent text-white font-bold py-4 px-8 rounded-full transition-all duration-300 ease-in-out transform hover:scale-110 hover:shadow-2xl hover:bg-accent hover:text-black text-lg shadow-lg"
-							>
+						<a 
+							href="#contact" 
+							className="border border-white hover:border-accent text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 hover:shadow-xl hover:bg-accent hover:text-black text-base shadow"
+						>
 								Contact Us
 							</a>
 						</motion.div>
-						<motion.div 
-							className="absolute bottom-8 left-0 right-0 flex justify-center"
+					<motion.div 
+						className="absolute bottom-6 left-0 right-0 flex justify-center"
 							initial={{ opacity: 0 }}
 							animate={{ opacity: 1 }}
 							transition={{ delay: 1 }}
 						>
-							<div className="flex flex-row gap-4 text-sm text-gray-300">
+						<div className="flex flex-row gap-3 text-xs text-gray-300">
 								<span>📍 Sikar, Rajasthan</span>
 								<span>|</span>
 								<span>🌾 Serving Farmers Since 2020</span>
@@ -89,10 +89,10 @@ const Hero: React.FC<HeroProps> = ({ heroImage, products, onBuyNow }) => {
 					</motion.div>
 				</section>
 						{/* Homepage Products Section */}
-						<section className="py-10 bg-transparent">
+					<section className="py-6 bg-transparent">
 							<div className="mx-auto max-w-5xl px-4">
-								<h2 className="text-2xl font-bold text-center mb-6 text-primary">Featured Products</h2>
-								<div className="grid grid-cols-1 sm:grid-cols-2 gap-6 justify-center">
+							<h2 className="text-xl font-semibold text-center mb-4 text-primary">Featured Products</h2>
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 justify-center">
 									{products.slice(0,2).map(product => (
 										<ProductCard key={product.id} product={product} onBuyNow={onBuyNow} />
 									))}
@@ -100,43 +100,43 @@ const Hero: React.FC<HeroProps> = ({ heroImage, products, onBuyNow }) => {
 							</div>
 						</section>
 						{/* Features Section */}
-				<section className="bg-white py-16">
+			<section className="bg-white py-10">
 					<div className="container mx-auto px-4 md:px-8">
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-10 text-center">
+					<div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
 							<div className="flex flex-col items-center">
-								<GlobeAltIcon className="w-12 h-12 text-primary mb-4" />
-								<h3 className="text-xl font-semibold mb-2">Premium Build Quality</h3>
-								<p className="text-gray-600">Engineered for durability and reliability, our products set the standard for modern agriculture.</p>
+							<GlobeAltIcon className="w-10 h-10 text-primary mb-2" />
+							<h3 className="text-lg font-semibold mb-1">Premium Build Quality</h3>
+							<p className="text-gray-600 text-sm">Engineered for durability and reliability, our products set the standard for modern agriculture.</p>
 							</div>
 							<div className="flex flex-col items-center">
-								<PhoneIcon className="w-12 h-12 text-primary mb-4" />
-								<h3 className="text-xl font-semibold mb-2">Smart Technology</h3>
-								<p className="text-gray-600">Integrating advanced features for efficiency, safety, and ease of use—empowering every farmer.</p>
+							<PhoneIcon className="w-10 h-10 text-primary mb-2" />
+							<h3 className="text-lg font-semibold mb-1">Smart Technology</h3>
+							<p className="text-gray-600 text-sm">Integrating advanced features for efficiency, safety, and ease of use—empowering every farmer.</p>
 							</div>
 							<div className="flex flex-col items-center">
-								<EnvelopeIcon className="w-12 h-12 text-primary mb-4" />
-								<h3 className="text-xl font-semibold mb-2">Expert Support</h3>
-								<p className="text-gray-600">Our team is dedicated to your success, offering guidance, training, and after-sales service.</p>
+							<EnvelopeIcon className="w-10 h-10 text-primary mb-2" />
+							<h3 className="text-lg font-semibold mb-1">Expert Support</h3>
+							<p className="text-gray-600 text-sm">Our team is dedicated to your success, offering guidance, training, and after-sales service.</p>
 							</div>
 						</div>
 					</div>
 				</section>
 
 				{/* Statistics Section */}
-				<section className="py-16 bg-white text-gray-900">
+			<section className="py-10 bg-white text-gray-900">
 					<div className="container mx-auto px-4 md:px-8">
-						<motion.div 
-							className="text-center mb-12"
+					<motion.div 
+						className="text-center mb-6"
 							initial={{ opacity: 0, y: 20 }}
 							whileInView={{ opacity: 1, y: 0 }}
 							transition={{ duration: 0.6 }}
 							viewport={{ once: true }}
 						>
-							<h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">Trusted by Farmers Across Rajasthan</h2>
-							<p className="text-xl font-semibold text-gray-700">Numbers that speak for our commitment to excellence</p>
+						<h2 className="text-2xl md:text-3xl font-semibold mb-2 text-gray-900">Trusted by Farmers Across Rajasthan</h2>
+						<p className="text-base font-medium text-gray-700">Numbers that speak for our commitment to excellence</p>
 						</motion.div>
 						
-						<div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+					<div className="grid grid-cols-2 md:grid-cols-4 gap-6">
 							<motion.div 
 								className="text-center"
 								initial={{ opacity: 0, scale: 0.8 }}
@@ -144,8 +144,8 @@ const Hero: React.FC<HeroProps> = ({ heroImage, products, onBuyNow }) => {
 								transition={{ duration: 0.6, delay: 0.1 }}
 								viewport={{ once: true }}
 							>
-								<div className="text-4xl md:text-5xl font-bold mb-2 text-gray-900">500+</div>
-								<div className="text-gray-700 font-semibold">Happy Farmers</div>
+							<div className="text-3xl md:text-4xl font-bold mb-1 text-gray-900">500+</div>
+							<div className="text-gray-700 font-medium text-sm">Happy Farmers</div>
 							</motion.div>
 							<motion.div 
 								className="text-center"
@@ -154,8 +154,8 @@ const Hero: React.FC<HeroProps> = ({ heroImage, products, onBuyNow }) => {
 								transition={{ duration: 0.6, delay: 0.2 }}
 								viewport={{ once: true }}
 							>
-								<div className="text-4xl md:text-5xl font-bold mb-2 text-gray-900">1000+</div>
-								<div className="text-gray-700 font-semibold">Machines Sold</div>
+							<div className="text-3xl md:text-4xl font-bold mb-1 text-gray-900">1000+</div>
+							<div className="text-gray-700 font-medium text-sm">Machines Sold</div>
 							</motion.div>
 							<motion.div 
 								className="text-center"
@@ -164,8 +164,8 @@ const Hero: React.FC<HeroProps> = ({ heroImage, products, onBuyNow }) => {
 								transition={{ duration: 0.6, delay: 0.3 }}
 								viewport={{ once: true }}
 							>
-								<div className="text-4xl md:text-5xl font-bold mb-2 text-gray-900">5★</div>
-								<div className="text-gray-700 font-semibold">Customer Rating</div>
+							<div className="text-3xl md:text-4xl font-bold mb-1 text-gray-900">5★</div>
+							<div className="text-gray-700 font-medium text-sm">Customer Rating</div>
 							</motion.div>
 							<motion.div 
 								className="text-center"
@@ -174,8 +174,8 @@ const Hero: React.FC<HeroProps> = ({ heroImage, products, onBuyNow }) => {
 								transition={{ duration: 0.6, delay: 0.4 }}
 								viewport={{ once: true }}
 							>
-								<div className="text-4xl md:text-5xl font-bold mb-2 text-gray-900">24/7</div>
-								<div className="text-gray-700 font-semibold">Support</div>
+							<div className="text-3xl md:text-4xl font-bold mb-1 text-gray-900">24/7</div>
+							<div className="text-gray-700 font-medium text-sm">Support</div>
 							</motion.div>
 						</div>
 					</div>

@@ -33,9 +33,26 @@ const App: React.FC = () => {
         localStorage.setItem('products', JSON.stringify(products));
     }, [products]);
 
+    // Load persistent site images from backend on mount
     useEffect(() => {
-        localStorage.setItem('siteImages', JSON.stringify(siteImages));
-    }, [siteImages]);
+        const fetchSiteImages = async () => {
+            try {
+                const res = await fetch('http://localhost:8000/api/site-images');
+                const json = await res.json();
+                if (json?.success && json?.data) {
+                    const { logo, hero, about, qr_code } = json.data;
+                    const merged: SiteImages = {
+                        logo: logo || siteImages.logo,
+                        hero: hero || siteImages.hero,
+                        about: about || siteImages.about,
+                        qrCode: qr_code || siteImages.qrCode,
+                    };
+                    setSiteImages(merged);
+                }
+            } catch {}
+        };
+        fetchSiteImages();
+    }, []);
 
     useEffect(() => {
         const handleHashChange = () => {
@@ -91,8 +108,6 @@ const App: React.FC = () => {
             return (
                 <>
                     <Hero heroImage={siteImages.hero} products={products} onBuyNow={handleBuyNow} />
-                    <About aboutImage={siteImages.about} />
-                    <Contact siteImages={siteImages} />
                 </>
             );
         }

@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const multer = require('multer');
 const sqlite3 = require('sqlite3').verbose();
 const qrcode = require('qrcode');
 const path = require('path');
@@ -11,6 +12,23 @@ const PORT = 8000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+// Serve uploaded files
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
+app.use('/uploads', express.static(uploadsDir));
+
+// Multer storage
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir);
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname);
+    const base = path.basename(file.originalname, ext).replace(/[^a-z0-9-_]/gi, '_');
+    cb(null, `${Date.now()}_${base}${ext}`);
+  }
+});
+const upload = multer({ storage });
 
 // Database setup
 const db = new sqlite3.Database('payments.db');
@@ -66,6 +84,17 @@ db.serialize(() => {
     (id, business_name, business_email, business_phone, business_address, merchant_upi)
     VALUES (1, 'Ratan Agri Tech', 'ratanagritech@gmail.com', '+91 7726017648', 
             'Jagmalpura, Sikar, Rajasthan', 'ratanagritech@axisbank')`);
+
+  // Site images table (persistent URLs/paths)
+  db.run(`CREATE TABLE IF NOT EXISTS site_images (
+    id INTEGER PRIMARY KEY,
+    logo TEXT,
+    hero TEXT,
+    about TEXT,
+    qr_code TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+  db.run(`INSERT OR IGNORE INTO site_images (id, logo, hero, about, qr_code) VALUES (1, '', '', '', '')`);
 });
 
 // Helper functions
@@ -124,6 +153,47 @@ app.get('/', (req, res) => {
       'Business Dashboard'
     ]
   });
+});
+
+// File upload endpoint
+app.post('/api/upload', upload.single('file'), (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, error: 'No file uploaded' });
+    const url = `/uploads/${req.file.filename}`;
+    res.json({ success: true, url });
+  } catch (e) {
+    console.error('Upload error:', e);
+    res.status(500).json({ success: false, error: 'Upload failed' });
+  }
+});
+
+// Site images GET/POST
+app.get('/api/site-images', (req, res) => {
+  db.get('SELECT * FROM site_images WHERE id = 1', (err, row) => {
+    if (err) return res.status(500).json({ success: false, error: 'DB error' });
+    res.json({ success: true, data: row || {} });
+  });
+});
+
+app.post('/api/site-images', (req, res) => {
+  const { logo, hero, about, qr_code } = req.body || {};
+  db.run(
+    `UPDATE site_images SET 
+       logo = COALESCE(?, logo),
+       hero = COALESCE(?, hero),
+       about = COALESCE(?, about),
+       qr_code = COALESCE(?, qr_code),
+       updated_at = CURRENT_TIMESTAMP
+     WHERE id = 1`,
+    [logo ?? null, hero ?? null, about ?? null, qr_code ?? null],
+    function (err) {
+      if (err) return res.status(500).json({ success: false, error: 'DB error' });
+      db.get('SELECT * FROM site_images WHERE id = 1', (e, row) => {
+        if (e) return res.status(500).json({ success: false, error: 'DB error' });
+        res.json({ success: true, data: row });
+      });
+    }
+  );
 });
 
 app.post('/api/create-payment', async (req, res) => {

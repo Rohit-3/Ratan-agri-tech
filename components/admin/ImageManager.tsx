@@ -2,13 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { SiteImages } from '../../types';
 import { initialSiteImages } from '../../constants';
 
-// Helper to convert file to base64
-const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
-});
+// Upload to backend and return absolute URL
+const uploadToBackend = async (file: File): Promise<string> => {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch('http://localhost:8000/api/upload', { method: 'POST', body: fd });
+    const json = await res.json();
+    if (!json?.success || !json?.url) throw new Error('Upload failed');
+    // Return full URL for direct use in <img>
+    return `http://localhost:8000${json.url}`;
+}
 
 interface ImageManagerProps {
     currentImages: SiteImages;
@@ -29,17 +32,36 @@ export const ImageManager: React.FC<ImageManagerProps> = ({ currentImages, onUpd
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, key: keyof SiteImages) => {
         const file = e.target.files?.[0];
         if (file) {
-            const base64 = await toBase64(file);
-            setImages(prev => ({ ...prev, [key]: base64 }));
-            // FIX: Corrected typo from `base6` to `base64`.
-            setPreviews(prev => ({...prev, [key]: base64 }));
+            // preview quickly
+            const previewUrl = URL.createObjectURL(file);
+            setPreviews(prev => ({ ...prev, [key]: previewUrl }));
+            // upload and set persistent URL
+            try {
+                const uploadedUrl = await uploadToBackend(file);
+                setImages(prev => ({ ...prev, [key]: uploadedUrl }));
+                setPreviews(prev => ({ ...prev, [key]: uploadedUrl }));
+            } catch (err) {
+                console.error('Upload failed', err);
+            }
         }
     };
 
-    const handleSave = () => {
-        onUpdate(images);
-        setIsSaved(true);
-        setTimeout(() => setIsSaved(false), 3000);
+    const handleSave = async () => {
+        try {
+            // Persist to backend site-images
+            const res = await fetch('http://localhost:8000/api/site-images', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(images)
+            });
+            const json = await res.json();
+            if (!json?.success) throw new Error('Save failed');
+            onUpdate(images);
+            setIsSaved(true);
+            setTimeout(() => setIsSaved(false), 3000);
+        } catch (e) {
+            console.error(e);
+        }
     };
 
     return (

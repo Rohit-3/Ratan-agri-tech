@@ -105,21 +105,17 @@ const WorldClassPaymentSystem: React.FC<WorldClassPaymentSystemProps> = ({ produ
       const transaction_id = `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const invoice_id = `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${transaction_id.slice(-8).toUpperCase()}`;
       
-      // Get QR codes from admin panel
-      const savedQRCodes = localStorage.getItem('admin_qr_codes');
+      // Fetch persistent QR from backend site images
       let qrCode = '';
       let merchantUPI = 'ratanagritech@axisbank';
       let merchantName = 'Ratan Agri Tech';
-      
-      if (savedQRCodes) {
-        const qrCodes = JSON.parse(savedQRCodes);
-        const activeQR = qrCodes.find((qr: any) => qr.is_active);
-        if (activeQR) {
-          qrCode = activeQR.qr_code_url;
-          merchantUPI = activeQR.upi_id;
-          merchantName = activeQR.name;
+      try {
+        const res = await fetch('http://localhost:8000/api/site-images');
+        const json = await res.json();
+        if (json?.success && json?.data) {
+          if (json.data.qr_code) qrCode = `http://localhost:8000${json.data.qr_code}`;
         }
-      }
+      } catch {}
       
       // If no QR code from admin, use placeholder
       if (!qrCode) {
@@ -138,7 +134,7 @@ const WorldClassPaymentSystem: React.FC<WorldClassPaymentSystemProps> = ({ produ
         gst_amount: gstAmount,
         total_amount: totalAmount,
         upi_link,
-        qr_code: qrCode,
+        qr_code: qrCode, // now a full URL served by backend
         merchant_upi: merchantUPI,
         merchant_name: merchantName,
         expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
@@ -451,7 +447,7 @@ Thank you for your business!
                   {paymentResponse.qr_code && paymentResponse.qr_code !== 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' ? (
                     <div className="w-64 h-64 flex items-center justify-center rounded-xl">
                       <img
-                        src={`data:image/png;base64,${paymentResponse.qr_code}`}
+                        src={paymentResponse.qr_code}
                         alt="UPI QR Code"
                         className="max-w-full max-h-full object-contain"
                       />

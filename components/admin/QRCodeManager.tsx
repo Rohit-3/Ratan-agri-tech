@@ -70,28 +70,41 @@ const QRCodeManager: React.FC = () => {
     setLoading(true);
 
     try {
-      let qrCodeBase64 = '';
+      // 1) Upload file to backend
+      let uploadedUrl = '';
       if (formData.qr_code_file) {
-        qrCodeBase64 = await convertFileToBase64(formData.qr_code_file);
+        const fd = new FormData();
+        fd.append('file', formData.qr_code_file);
+        const uploadRes = await fetch('http://localhost:8000/api/upload', {
+          method: 'POST',
+          body: fd
+        });
+        const uploadJson = await uploadRes.json();
+        if (!uploadJson.success) throw new Error('Upload failed');
+        uploadedUrl = uploadJson.url; // e.g. /uploads/filename.png
       }
 
+      // 2) Save as site image (qr_code)
+      const saveRes = await fetch('http://localhost:8000/api/site-images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qr_code: uploadedUrl })
+      });
+      const saveJson = await saveRes.json();
+      if (!saveJson.success) throw new Error('Save site image failed');
+
+      // 3) Mirror minimal data locally too (for UI listing)
       const newQRCode: QRCode = {
         id: editingQR ? editingQR.id : `qr_${Date.now()}`,
         name: formData.name,
         upi_id: formData.upi_id,
-        qr_code_url: qrCodeBase64,
+        qr_code_url: uploadedUrl,
         is_active: formData.is_active,
         created_at: editingQR ? editingQR.created_at : new Date().toISOString()
       };
-
-      let updatedCodes;
-      if (editingQR) {
-        updatedCodes = qrCodes.map(qr => qr.id === editingQR.id ? newQRCode : qr);
-      } else {
-        updatedCodes = [...qrCodes, newQRCode];
-      }
-
+      const updatedCodes = editingQR ? qrCodes.map(qr => qr.id === editingQR.id ? newQRCode : qr) : [newQRCode, ...qrCodes];
       saveQRCodes(updatedCodes);
+
       setShowForm(false);
       setEditingQR(null);
       setFormData({ name: '', upi_id: '', qr_code_file: null, is_active: true });
