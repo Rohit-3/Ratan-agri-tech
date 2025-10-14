@@ -1,0 +1,26 @@
+{
+  "name": "ratan-agri-tech-payment-system",
+  "version": "2.0.0",
+  "description": "Production-Ready UPI Payment + GST Invoice System",
+  "main": "production_server.js",
+  "scripts": {
+    "start": "node production_server.js",
+    "dev": "node production_server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "sqlite3": "^5.1.6",
+    "qrcode": "^1.5.3"
+  },
+  "keywords": [
+    "payment",
+    "upi",
+    "gst",
+    "invoice",
+    "agriculture",
+    "business"
+  ],
+  "author": "Ratan Agri Tech",
+  "license": "MIT"
+}

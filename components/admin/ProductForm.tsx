@@ -1,0 +1,123 @@
+import React, { useState } from 'react';
+import { categories } from '../../constants';
+import { Product, ProductCategory } from '../../types';
+
+// Helper to convert file to base64
+const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = error => reject(error);
+});
+
+interface ProductFormProps {
+    onAddProduct: (product: Omit<Product, 'id'>) => void;
+}
+
+const initialFormState = {
+    name: '',
+    category: ProductCategory.PowerTiller,
+    image: '',
+    description: '',
+    specifications: '',
+    price: '',
+};
+
+const ProductForm: React.FC<ProductFormProps> = ({ onAddProduct }) => {
+    const [formState, setFormState] = useState(initialFormState);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    
+    const productCategories = categories.filter(c => c !== ProductCategory.All);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setFormState(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const base64 = await toBase64(file);
+            setFormState(prev => ({ ...prev, image: base64 }));
+            setImagePreview(base64);
+        }
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        // Convert specifications string to object
+        const specsObject = formState.specifications.split('\n').reduce((acc, line) => {
+            const [key, value] = line.split(':', 2);
+            if (key && value) {
+                acc[key.trim()] = value.trim();
+            }
+            return acc;
+        }, {} as { [key: string]: string });
+
+        onAddProduct({
+            name: formState.name,
+            category: formState.category,
+            image: formState.image,
+            description: formState.description,
+            specifications: specsObject,
+            price: Number(formState.price) || undefined,
+        });
+
+        // Reset form and show success message
+        setFormState(initialFormState);
+        setImagePreview(null);
+        (document.getElementById('product-form') as HTMLFormElement)?.reset();
+        setIsSubmitted(true);
+        setTimeout(() => setIsSubmitted(false), 3000);
+    };
+
+    return (
+        <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Add New Product</h2>
+            <form id="product-form" onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">Product Name</label>
+                        <input type="text" name="name" id="name" value={formState.name} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" />
+                    </div>
+                    <div>
+                        <label htmlFor="category" className="block text-sm font-medium text-gray-700">Category</label>
+                        <select name="category" id="category" value={formState.category} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                            {productCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                        </select>
+                    </div>
+                </div>
+                 <div>
+                    <label htmlFor="price" className="block text-sm font-medium text-gray-700">Price (INR)</label>
+                    <input type="number" name="price" id="price" value={formState.price} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="e.g., 45000" />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Product Image</label>
+                    <div className="mt-1 flex items-center space-x-4">
+                        {imagePreview && <img src={imagePreview} alt="Preview" className="w-24 h-24 object-cover rounded-md bg-gray-100" />}
+                        <input type="file" accept="image/*" onChange={handleImageChange} required className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"/>
+                    </div>
+                </div>
+                <div>
+                    <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
+                    <textarea name="description" id="description" value={formState.description} onChange={handleChange} rows={3} required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"></textarea>
+                </div>
+                <div>
+                    <label htmlFor="specifications" className="block text-sm font-medium text-gray-700">Specifications</label>
+                    <textarea name="specifications" id="specifications" value={formState.specifications} onChange={handleChange} rows={4} required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="Enter one per line, e.g., Engine: 7 HP Petrol"></textarea>
+                    <p className="mt-1 text-xs text-gray-500">Format: Key: Value (one per line)</p>
+                </div>
+                <div className="text-right">
+                    <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition duration-300">
+                        Add Product
+                    </button>
+                    {isSubmitted && <span className="ml-4 text-green-600 font-semibold">Product added successfully!</span>}
+                </div>
+            </form>
+        </div>
+    );
+};
+
+export default ProductForm;

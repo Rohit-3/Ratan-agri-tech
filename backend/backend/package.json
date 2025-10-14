@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "ratan-agri-tech-payment-backend": "file:.."
+  }
+}
