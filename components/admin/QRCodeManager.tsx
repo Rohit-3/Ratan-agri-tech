@@ -286,7 +286,11 @@ const QRCodeManager: React.FC = () => {
                 <p className="text-sm text-black font-extrabold mb-2">QR Code</p>
                 <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center">
                   <img
-                    src={qrCode.qr_code_url.startsWith('http') ? qrCode.qr_code_url : `${(import.meta.env.VITE_API_URL || window.location.origin)}${qrCode.qr_code_url.startsWith('/') ? qrCode.qr_code_url : `/${qrCode.qr_code_url}`}`}
+                    src={
+                      qrCode.qr_code_url.startsWith('http') || qrCode.qr_code_url.startsWith('data:')
+                        ? qrCode.qr_code_url
+                        : `${(import.meta.env.VITE_API_URL || window.location.origin)}${qrCode.qr_code_url.startsWith('/') ? qrCode.qr_code_url : `/${qrCode.qr_code_url}`}`
+                    }
                     onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/image/qr%20code.jpg'; }}
                     alt="QR Code"
                     className="max-w-full max-h-full object-contain"

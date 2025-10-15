@@ -33,8 +33,41 @@ const App: React.FC = () => {
         localStorage.setItem('products', JSON.stringify(products));
     }, [products]);
 
-    // Load persistent site images from backend on mount
+    // Persist site images to localStorage so they survive backend resets/sleep
     useEffect(() => {
+        try {
+            localStorage.setItem('siteImages', JSON.stringify(siteImages));
+        } catch {}
+    }, [siteImages]);
+
+    // Load products and site images on mount with local fallback
+    useEffect(() => {
+        // Try to load products from backend, merge with local
+        (async () => {
+            try {
+                const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
+                const res = await fetch(`${apiUrl}/api/products`);
+                const json = await res.json();
+                if (json?.success && Array.isArray(json.data)) {
+                    // Normalize to Product[] used by UI
+                    const backendProducts = json.data.map((p: any) => ({
+                        id: p.id ?? Date.now() + Math.random(),
+                        name: p.name,
+                        category: p.category,
+                        image: p.image_url,
+                        description: p.description,
+                        specifications: {},
+                        price: typeof p.price === 'number' ? p.price : undefined,
+                    }));
+                    // Prefer backend list if not empty
+                    if (backendProducts.length) {
+                        setProducts(backendProducts);
+                        localStorage.setItem('products', JSON.stringify(backendProducts));
+                    }
+                }
+            } catch {}
+        })();
+
         // Migration: clear stale siteImages pointing to localhost or /uploads so bundled images take effect
         try {
             const stored = localStorage.getItem('siteImages');
@@ -70,7 +103,7 @@ const App: React.FC = () => {
                     const { logo, hero, about, qr_code } = json.data;
                     const toAbsolute = (value: string | undefined) => {
                         if (!value) return undefined;
-                        if (value.startsWith('http')) return value;
+                        if (value.startsWith('http') || value.startsWith('data:')) return value;
                         // ensure leading slash
                         const path = value.startsWith('/') ? value : `/${value}`;
                         return `${apiUrl}${path}`;

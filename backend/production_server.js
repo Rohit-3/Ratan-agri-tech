@@ -7,94 +7,153 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const PORT = 8000;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 8000;
+// Trust reverse proxy (Render/Heroku) so req.protocol honors X-Forwarded-Proto
+app.set('trust proxy', 1);
+const APP_VERSION = '2.0.0';
 
 // Middleware
-app.use(cors());
-app.use(express.json());
-// Serve uploaded files
+app.use(cors({ origin: true }));
+app.use(express.json({ limit: '10mb' }));
+// Version header on all responses
+app.use((req, res, next) => {
+  res.setHeader('X-App-Version', APP_VERSION);
+  next();
+});
+// Optional local uploads dir (not required when returning data URLs)
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 app.use('/uploads', express.static(uploadsDir));
 
-// Multer storage
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadsDir);
-  },
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname);
-    const base = path.basename(file.originalname, ext).replace(/[^a-z0-9-_]/gi, '_');
-    cb(null, `${Date.now()}_${base}${ext}`);
+// Simple naive rate limit for non-GET requests
+let recentHits = 0;
+setInterval(() => { recentHits = Math.max(0, recentHits - 5); }, 1000);
+app.use((req, res, next) => {
+  if (req.method !== 'GET') {
+    if (recentHits > 200) return res.status(429).json({ success: false, error: 'Too many requests' });
+    recentHits++;
   }
+  next();
 });
+
+// Basic body sanitization for strings
+function sanitizeString(s) {
+  if (typeof s !== 'string') return s;
+  return s.replace(/[\u0000-\u001F\u007F<>]/g, '').trim();
+}
+app.use((req, _res, next) => {
+  if (req.body && typeof req.body === 'object') {
+    for (const k of Object.keys(req.body)) {
+      if (typeof req.body[k] === 'string') req.body[k] = sanitizeString(req.body[k]);
+    }
+  }
+  next();
+});
+
+// Multer storage: use memory so we can return data URLs and store in DB
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// Database setup
-const db = new sqlite3.Database('payments.db');
+// Database setup (SQLite only)
+const sqliteDb = new sqlite3.Database('payments.db');
 
-// Initialize database
-db.serialize(() => {
-  // Transactions table
-  db.run(`CREATE TABLE IF NOT EXISTS transactions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    transaction_id TEXT UNIQUE NOT NULL,
-    customer_name TEXT NOT NULL,
-    customer_email TEXT NOT NULL,
-    customer_phone TEXT,
-    product_name TEXT NOT NULL,
-    product_id INTEGER,
-    base_amount REAL NOT NULL,
-    gst_rate REAL DEFAULT 0.18,
-    gst_amount REAL NOT NULL,
-    total_amount REAL NOT NULL,
-    merchant_upi TEXT NOT NULL,
-    merchant_name TEXT NOT NULL,
-    utr TEXT,
-    status TEXT DEFAULT 'pending',
-    invoice_id TEXT UNIQUE,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    paid_at DATETIME,
-    invoice_sent BOOLEAN DEFAULT FALSE,
-    payment_method TEXT DEFAULT 'UPI',
-    notes TEXT
-  )`);
+function dbRun(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    sqliteDb.run(sql, params, function (err) {
+      if (err) reject(err);
+      else resolve({ changes: this.changes, lastID: this.lastID });
+    });
+  });
+}
 
-  // Business settings table
-  db.run(`CREATE TABLE IF NOT EXISTS business_settings (
-    id INTEGER PRIMARY KEY,
-    business_name TEXT NOT NULL,
-    business_email TEXT NOT NULL,
-    business_phone TEXT NOT NULL,
-    business_address TEXT NOT NULL,
-    business_gstin TEXT,
-    business_pan TEXT,
-    merchant_upi TEXT NOT NULL,
-    bank_name TEXT,
-    bank_account TEXT,
-    ifsc_code TEXT,
-    logo_url TEXT,
-    website_url TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )`);
+function dbGet(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    sqliteDb.get(sql, params, (err, row) => {
+      if (err) reject(err);
+      else resolve(row || null);
+    });
+  });
+}
 
-  // Insert default business settings
-  db.run(`INSERT OR IGNORE INTO business_settings 
-    (id, business_name, business_email, business_phone, business_address, merchant_upi)
-    VALUES (1, 'Ratan Agri Tech', 'ratanagritech@gmail.com', '+91 7726017648', 
-            'Jagmalpura, Sikar, Rajasthan', 'ratanagritech@axisbank')`);
+function dbAll(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    sqliteDb.all(sql, params, (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows || []);
+    });
+  });
+}
 
-  // Site images table (persistent URLs/paths)
-  db.run(`CREATE TABLE IF NOT EXISTS site_images (
-    id INTEGER PRIMARY KEY,
-    logo TEXT,
-    hero TEXT,
-    about TEXT,
-    qr_code TEXT,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )`);
-  db.run(`INSERT OR IGNORE INTO site_images (id, logo, hero, about, qr_code) VALUES (1, '', '', '', '')`);
+// Initialize database (async to support both engines)
+(async () => {
+  // SQLite schema
+    await dbRun(`CREATE TABLE IF NOT EXISTS transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      transaction_id TEXT UNIQUE NOT NULL,
+      customer_name TEXT NOT NULL,
+      customer_email TEXT NOT NULL,
+      customer_phone TEXT,
+      product_name TEXT NOT NULL,
+      product_id INTEGER,
+      base_amount REAL NOT NULL,
+      gst_rate REAL DEFAULT 0.18,
+      gst_amount REAL NOT NULL,
+      total_amount REAL NOT NULL,
+      merchant_upi TEXT NOT NULL,
+      merchant_name TEXT NOT NULL,
+      utr TEXT,
+      status TEXT DEFAULT 'pending',
+      invoice_id TEXT UNIQUE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      paid_at DATETIME,
+      invoice_sent BOOLEAN DEFAULT FALSE,
+      payment_method TEXT DEFAULT 'UPI',
+      notes TEXT
+    )`);
+
+    await dbRun(`CREATE TABLE IF NOT EXISTS business_settings (
+      id INTEGER PRIMARY KEY,
+      business_name TEXT NOT NULL,
+      business_email TEXT NOT NULL,
+      business_phone TEXT NOT NULL,
+      business_address TEXT NOT NULL,
+      business_gstin TEXT,
+      business_pan TEXT,
+      merchant_upi TEXT NOT NULL,
+      bank_name TEXT,
+      bank_account TEXT,
+      ifsc_code TEXT,
+      logo_url TEXT,
+      website_url TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+    await dbRun(`INSERT OR IGNORE INTO business_settings (id, business_name, business_email, business_phone, business_address, merchant_upi)
+                 VALUES (1, 'Ratan Agri Tech', 'ratanagritech@gmail.com', '+91 7726017648', 'Jagmalpura, Sikar, Rajasthan', 'ratanagritech@axisbank')`);
+
+    await dbRun(`CREATE TABLE IF NOT EXISTS site_images (
+      id INTEGER PRIMARY KEY,
+      logo TEXT,
+      hero TEXT,
+      about TEXT,
+      qr_code TEXT,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+    await dbRun(`INSERT OR IGNORE INTO site_images (id, logo, hero, about, qr_code) VALUES (1, '', '', '', '')`);
+
+    await dbRun(`CREATE TABLE IF NOT EXISTS products (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      price REAL NOT NULL,
+      image_url TEXT,
+      category TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+})().catch((e) => {
+  console.error('Database initialization failed:', e);
+  process.exit(1);
 });
 
 // Helper functions
@@ -102,6 +161,18 @@ function calculateGST(baseAmount, gstRate = 0.18) {
   const gstAmount = Math.round(baseAmount * gstRate * 100) / 100;
   const totalAmount = Math.round((baseAmount + gstAmount) * 100) / 100;
   return { gstAmount, totalAmount };
+}
+
+function computeETagFromObject(obj) {
+  try {
+    const json = JSON.stringify(obj);
+    // simple weak ETag via length + basic hash
+    let hash = 0;
+    for (let i = 0; i < json.length; i++) hash = ((hash << 5) - hash) + json.charCodeAt(i) | 0;
+    return `W/"${json.length}-${Math.abs(hash)}"`;
+  } catch {
+    return undefined;
+  }
 }
 
 function generateUPILink(merchantUPI, merchantName, amount, invoiceId) {
@@ -118,28 +189,27 @@ function generateQRCode(upiLink) {
   });
 }
 
-function getBusinessSettings() {
-  return new Promise((resolve, reject) => {
-    db.get("SELECT * FROM business_settings WHERE id = 1", (err, row) => {
-      if (err) reject(err);
-      else if (!row) {
-        // Return default settings
-        resolve({
-          business_name: 'Ratan Agri Tech',
-          business_email: 'ratanagritech@gmail.com',
-          business_phone: '+91 7726017648',
-          business_address: 'Jagmalpura, Sikar, Rajasthan',
-          business_gstin: null,
-          merchant_upi: 'ratanagritech@axisbank'
-        });
-      } else {
-        resolve(row);
-      }
-    });
-  });
+async function getBusinessSettings() {
+  const row = await dbGet('SELECT * FROM business_settings WHERE id = ?', [1]);
+  if (!row) {
+    return {
+      business_name: 'Ratan Agri Tech',
+      business_email: 'ratanagritech@gmail.com',
+      business_phone: '+91 7726017648',
+      business_address: 'Jagmalpura, Sikar, Rajasthan',
+      business_gstin: null,
+      merchant_upi: 'ratanagritech@axisbank'
+    };
+  }
+  return row;
 }
 
 // Routes
+// Health endpoint
+app.get('/health', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ success: true, data: { status: 'ok', version: APP_VERSION } });
+});
 app.get('/', (req, res) => {
   res.json({
     message: 'Ratan Agri Tech Payment System API',
@@ -159,8 +229,11 @@ app.get('/', (req, res) => {
 app.post('/api/upload', upload.single('file'), (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, error: 'No file uploaded' });
-    const url = `/uploads/${req.file.filename}`;
-    res.json({ success: true, url });
+    // Return data URL so it persists independent of filesystem
+    const mime = req.file.mimetype || 'image/png';
+    const base64 = req.file.buffer.toString('base64');
+    const dataUrl = `data:${mime};base64,${base64}`;
+    res.json({ success: true, url: dataUrl });
   } catch (e) {
     console.error('Upload error:', e);
     res.status(500).json({ success: false, error: 'Upload failed' });
@@ -168,32 +241,56 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 });
 
 // Site images GET/POST
-app.get('/api/site-images', (req, res) => {
-  db.get('SELECT * FROM site_images WHERE id = 1', (err, row) => {
-    if (err) return res.status(500).json({ success: false, error: 'DB error' });
-    res.json({ success: true, data: row || {} });
-  });
+app.get('/api/site-images', async (req, res) => {
+  try {
+    const row = await dbGet('SELECT * FROM site_images WHERE id = ?', [1]);
+    const data = row || {};
+    // Expand any relative paths (e.g., /uploads/...) to absolute URLs; pass through data URLs untouched
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.get('host');
+    const absolutize = (value) => {
+      if (!value || typeof value !== 'string') return value;
+      if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:')) return value;
+      const withSlash = value.startsWith('/') ? value : `/${value}`;
+      return `${protocol}://${host}${withSlash}`;
+    };
+    const response = {
+      ...data,
+      logo: absolutize(data.logo),
+      hero: absolutize(data.hero),
+      about: data.about,
+      qr_code: absolutize(data.qr_code),
+    };
+    const etag = computeETagFromObject(response);
+    if (etag && req.headers['if-none-match'] === etag) {
+      res.status(304).end();
+      return;
+    }
+    if (etag) res.setHeader('ETag', etag);
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.json({ success: true, data: response });
+  } catch (err) {
+    console.error('site-images error:', err);
+    res.status(500).json({ success: false, error: 'DB error' });
+  }
 });
 
-app.post('/api/site-images', (req, res) => {
-  const { logo, hero, about, qr_code } = req.body || {};
-  db.run(
-    `UPDATE site_images SET 
-       logo = COALESCE(?, logo),
-       hero = COALESCE(?, hero),
-       about = COALESCE(?, about),
-       qr_code = COALESCE(?, qr_code),
-       updated_at = CURRENT_TIMESTAMP
-     WHERE id = 1`,
-    [logo ?? null, hero ?? null, about ?? null, qr_code ?? null],
-    function (err) {
-      if (err) return res.status(500).json({ success: false, error: 'DB error' });
-      db.get('SELECT * FROM site_images WHERE id = 1', (e, row) => {
-        if (e) return res.status(500).json({ success: false, error: 'DB error' });
-        res.json({ success: true, data: row });
-      });
-    }
-  );
+app.post('/api/site-images', async (req, res) => {
+  try {
+    const { logo, hero, about, qr_code } = req.body || {};
+    await dbRun(`UPDATE site_images SET 
+      logo = COALESCE(?, logo),
+      hero = COALESCE(?, hero),
+      about = COALESCE(?, about),
+      qr_code = COALESCE(?, qr_code),
+      updated_at = CURRENT_TIMESTAMP
+      WHERE id = 1`, [logo ?? null, hero ?? null, about ?? null, qr_code ?? null]);
+    const row = await dbGet('SELECT * FROM site_images WHERE id = ?', [1]);
+    res.json({ success: true, data: row });
+  } catch (err) {
+    console.error('site-images update error:', err);
+    res.status(500).json({ success: false, error: 'DB error' });
+  }
 });
 
 app.post('/api/create-payment', async (req, res) => {
@@ -217,38 +314,28 @@ app.post('/api/create-payment', async (req, res) => {
     const qr_code = await generateQRCode(upi_link);
     
     // Save to database
-    db.run(`INSERT INTO transactions 
-      (transaction_id, customer_name, customer_email, customer_phone, product_name, product_id,
-       base_amount, gst_rate, gst_amount, total_amount, merchant_upi, merchant_name, invoice_id, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [transaction_id, customer_name, customer_email, customer_phone, product_name, product_id,
-       base_amount, gst_rate, gstAmount, totalAmount, businessSettings.merchant_upi, 
-       businessSettings.business_name, invoice_id, notes],
-      function(err) {
-        if (err) {
-          console.error('Database error:', err);
-          res.status(500).json({ success: false, error: 'Database error' });
-          return;
-        }
-        
-        console.log(`Payment created: ${transaction_id}`);
-        
-        res.json({
-          success: true,
-          transaction_id,
-          invoice_id,
-          base_amount,
-          gst_rate,
-          gst_amount: gstAmount,
-          total_amount: totalAmount,
-          upi_link,
-          qr_code,
-          merchant_upi: businessSettings.merchant_upi,
-          merchant_name: businessSettings.business_name,
-          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-        });
-      }
-    );
+    const insertSql = `INSERT INTO transactions (transaction_id, customer_name, customer_email, customer_phone, product_name, product_id,
+         base_amount, gst_rate, gst_amount, total_amount, merchant_upi, merchant_name, invoice_id, notes)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+    await dbRun(insertSql, [transaction_id, customer_name, customer_email, customer_phone, product_name, product_id,
+      base_amount, gst_rate, gstAmount, totalAmount, businessSettings.merchant_upi,
+      businessSettings.business_name, invoice_id, notes]);
+
+    console.log(`Payment created: ${transaction_id}`);
+    res.json({
+      success: true,
+      transaction_id,
+      invoice_id,
+      base_amount,
+      gst_rate,
+      gst_amount: gstAmount,
+      total_amount: totalAmount,
+      upi_link,
+      qr_code,
+      merchant_upi: businessSettings.merchant_upi,
+      merchant_name: businessSettings.business_name,
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    });
     
   } catch (error) {
     console.error('Payment creation error:', error);
@@ -256,76 +343,40 @@ app.post('/api/create-payment', async (req, res) => {
   }
 });
 
-app.post('/api/confirm-payment', (req, res) => {
+app.post('/api/confirm-payment', async (req, res) => {
   try {
     const { transaction_id, utr, payment_method = 'UPI' } = req.body;
-    
-    // Update transaction
-    db.run(`UPDATE transactions 
-      SET utr = ?, status = 'paid', paid_at = CURRENT_TIMESTAMP, payment_method = ?
-      WHERE transaction_id = ?`,
-      [utr, payment_method, transaction_id],
-      function(err) {
-        if (err) {
-          console.error('Database error:', err);
-          res.status(500).json({ success: false, error: 'Database error' });
-          return;
-        }
-        
-        if (this.changes === 0) {
-          res.status(404).json({ success: false, error: 'Transaction not found' });
-          return;
-        }
-        
-        // Get transaction details
-        db.get('SELECT * FROM transactions WHERE transaction_id = ?', [transaction_id], (err, transaction) => {
-          if (err) {
-            console.error('Database error:', err);
-            res.status(500).json({ success: false, error: 'Database error' });
-            return;
-          }
-          
-          if (!transaction) {
-            res.status(404).json({ success: false, error: 'Transaction not found' });
-            return;
-          }
-          
-          console.log(`Payment confirmed: ${transaction_id}`);
-          
-          res.json({
-            success: true,
-            message: 'Payment confirmed and invoice sent',
-            transaction_id,
-            invoice_id: transaction.invoice_id,
-            invoice_url: `/api/invoice/${transaction.invoice_id}`
-          });
-        });
-      }
-    );
-    
+    const updateSql = `UPDATE transactions SET utr = ?, status = 'paid', paid_at = CURRENT_TIMESTAMP, payment_method = ? WHERE transaction_id = ?`;
+    const result = await dbRun(updateSql, [utr, payment_method, transaction_id]);
+    if (!result.changes) return res.status(404).json({ success: false, error: 'Transaction not found' });
+
+    const tx = await dbGet('SELECT * FROM transactions WHERE transaction_id = ?', [transaction_id]);
+    if (!tx) return res.status(404).json({ success: false, error: 'Transaction not found' });
+
+    console.log(`Payment confirmed: ${transaction_id}`);
+    res.json({
+      success: true,
+      message: 'Payment confirmed and invoice sent',
+      transaction_id,
+      invoice_id: tx.invoice_id,
+      invoice_url: `/api/invoice/${tx.invoice_id}`
+    });
   } catch (error) {
     console.error('Payment confirmation error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-app.get('/api/transaction/:transaction_id', (req, res) => {
-  const { transaction_id } = req.params;
-  
-  db.get('SELECT * FROM transactions WHERE transaction_id = ?', [transaction_id], (err, transaction) => {
-    if (err) {
-      console.error('Database error:', err);
-      res.status(500).json({ success: false, error: 'Database error' });
-      return;
-    }
-    
-    if (!transaction) {
-      res.status(404).json({ success: false, error: 'Transaction not found' });
-      return;
-    }
-    
-    res.json(transaction);
-  });
+app.get('/api/transaction/:transaction_id', async (req, res) => {
+  try {
+    const { transaction_id } = req.params;
+    const tx = await dbGet('SELECT * FROM transactions WHERE transaction_id = ?', [transaction_id]);
+    if (!tx) return res.status(404).json({ success: false, error: 'Transaction not found' });
+    res.json(tx);
+  } catch (err) {
+    console.error('Database error:', err);
+    res.status(500).json({ success: false, error: 'Database error' });
+  }
 });
 
 app.get('/api/business-settings', async (req, res) => {
@@ -338,39 +389,87 @@ app.get('/api/business-settings', async (req, res) => {
   }
 });
 
-app.get('/api/dashboard', (req, res) => {
-  // Get total transactions
-  db.get('SELECT COUNT(*) as total FROM transactions', (err, totalResult) => {
-    if (err) {
-      console.error('Database error:', err);
-      res.status(500).json({ success: false, error: 'Database error' });
+app.get('/api/dashboard', async (req, res) => {
+  try {
+    const totalRow = await dbGet('SELECT COUNT(*) as total FROM transactions', []);
+    const revenueRow = await dbGet("SELECT SUM(total_amount) as revenue FROM transactions WHERE status = 'paid'", []);
+    const recent = await dbAll('SELECT * FROM transactions ORDER BY created_at DESC LIMIT 10', []);
+    res.json({
+      total_transactions: (totalRow && (totalRow.total || totalRow.count)) || 0,
+      total_revenue: (revenueRow && revenueRow.revenue) || 0,
+      recent_transactions: recent
+    });
+  } catch (err) {
+    console.error('Database error:', err);
+    res.status(500).json({ success: false, error: 'Database error' });
+  }
+});
+
+// Products CRUD
+app.get('/api/products', async (req, res) => {
+  try {
+    const products = await dbAll('SELECT * FROM products ORDER BY created_at DESC', []);
+    const etag = computeETagFromObject(products);
+    if (etag && req.headers['if-none-match'] === etag) {
+      res.status(304).end();
       return;
     }
-    
-    // Get total revenue
-    db.get('SELECT SUM(total_amount) as revenue FROM transactions WHERE status = "paid"', (err, revenueResult) => {
-      if (err) {
-        console.error('Database error:', err);
-        res.status(500).json({ success: false, error: 'Database error' });
-        return;
-      }
-      
-      // Get recent transactions
-      db.all('SELECT * FROM transactions ORDER BY created_at DESC LIMIT 10', (err, recentTransactions) => {
-        if (err) {
-          console.error('Database error:', err);
-          res.status(500).json({ success: false, error: 'Database error' });
-          return;
-        }
-        
-        res.json({
-          total_transactions: totalResult.total,
-          total_revenue: revenueResult.revenue || 0,
-          recent_transactions: recentTransactions
-        });
-      });
-    });
-  });
+    if (etag) res.setHeader('ETag', etag);
+    res.setHeader('Cache-Control', 'public, max-age=120');
+    res.json({ success: true, data: products });
+  } catch (err) {
+    console.error('Products list error:', err);
+    res.status(500).json({ success: false, error: 'DB error' });
+  }
+});
+
+app.post('/api/products', async (req, res) => {
+  try {
+    const { name, description, price, image_url, category } = req.body || {};
+    if (!name || typeof price !== 'number' || price < 0) return res.status(400).json({ success: false, error: 'name and valid price are required' });
+    const sql = `INSERT INTO products (name, description, price, image_url, category) VALUES (?,?,?,?,?)`;
+    const result = await dbRun(sql, [name, description ?? null, price, image_url ?? null, category ?? null]);
+    const created = await dbGet('SELECT * FROM products WHERE id = ?', [result.lastID]);
+    res.json({ success: true, data: created });
+  } catch (err) {
+    console.error('Product create error:', err);
+    res.status(500).json({ success: false, error: 'DB error' });
+  }
+});
+
+app.put('/api/products/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, price, image_url, category } = req.body || {};
+    if (price != null && (typeof price !== 'number' || price < 0)) return res.status(400).json({ success: false, error: 'invalid price' });
+    const sql = `UPDATE products SET 
+           name = COALESCE(?, name),
+           description = COALESCE(?, description),
+           price = COALESCE(?, price),
+           image_url = COALESCE(?, image_url),
+           category = COALESCE(?, category),
+           updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`;
+    const result = await dbRun(sql, [name ?? null, description ?? null, typeof price === 'number' ? price : null, image_url ?? null, category ?? null, id]);
+    if (!result.changes) return res.status(404).json({ success: false, error: 'Product not found' });
+    const product = await dbGet('SELECT * FROM products WHERE id = ?', [id]);
+    res.json({ success: true, data: product });
+  } catch (err) {
+    console.error('Product update error:', err);
+    res.status(500).json({ success: false, error: 'DB error' });
+  }
+});
+
+app.delete('/api/products/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await dbRun('DELETE FROM products WHERE id = ?', [id]);
+    if (!result.changes) return res.status(404).json({ success: false, error: 'Product not found' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Product delete error:', err);
+    res.status(500).json({ success: false, error: 'DB error' });
+  }
 });
 
 // Start server

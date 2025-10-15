@@ -7,16 +7,20 @@ import { categories } from '../constants';
 
 const Products: React.FC<ProductsProps> = ({ products, onBuyNow }) => {
     const [selectedCategory, setSelectedCategory] = useState<ProductCategory>(ProductCategory.All);
+    const [query, setQuery] = useState('');
     const [ref, inView] = useInView({
         triggerOnce: true,
         threshold: 0.1
     });
 
     // Show all products; filter by category if selected
-    const filteredProducts = (selectedCategory === ProductCategory.All
+    const filteredByCat = (selectedCategory === ProductCategory.All
         ? products
         : products.filter(p => p.category === selectedCategory)
     );
+    const filteredProducts = query.trim()
+        ? filteredByCat.filter(p => (p.name + ' ' + p.description).toLowerCase().includes(query.toLowerCase()))
+        : filteredByCat;
 
     const containerVariants = {
         hidden: { opacity: 0, y: 20 },
@@ -63,11 +67,17 @@ const Products: React.FC<ProductsProps> = ({ products, onBuyNow }) => {
                     </div>
                 </motion.div>
 
-                {/* Category Filters */}
+                {/* Category Filters + Search */}
                 <motion.div 
                     className="flex flex-wrap justify-center gap-3 md:gap-4 mb-12"
                     variants={containerVariants}
                 >
+                    <input
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="Search products..."
+                        className="border border-gray-300 rounded px-3 py-2 w-full md:w-80"
+                    />
                     {categories.map(category => (
                         <motion.button
                             key={category}

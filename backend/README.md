@@ -16,7 +16,7 @@ A complete **UPI Payment + GST Invoice System** with **No-KYC** requirements for
 ## 🏗️ System Architecture
 
 ```
-Frontend (React) → Backend (FastAPI) → Database (SQLite)
+Frontend (React) → Backend (Node/Express) → Database (SQLite)
      ↓                    ↓                    ↓
 Payment Form → UPI Link Generation → Transaction Storage
      ↓                    ↓                    ↓
@@ -25,35 +25,11 @@ QR Code Display → PDF Invoice → Email Delivery
 
 ## 🚀 Quick Start
 
-### 1. Install Dependencies
+### 1. Start Backend Server
 
 ```bash
 cd backend
-python setup.py
-```
-
-### 2. Configure Environment
-
-Edit the `.env` file with your details:
-
-```env
-# Email Configuration
-EMAIL_USERNAME=your_email@gmail.com
-EMAIL_PASSWORD=your_gmail_app_password
-
-# Merchant Details
-MERCHANT_UPI=your_business@bank
-MERCHANT_NAME=Your Business Name
-MERCHANT_GSTIN=27ABCDE1234Z5X
-MERCHANT_ADDRESS=Your Business Address
-MERCHANT_PHONE=+91 9876543210
-MERCHANT_EMAIL=your_email@gmail.com
-```
-
-### 3. Start Backend Server
-
-```bash
-python start.py
+node production_server.js
 ```
 
 The API will be available at: `http://localhost:8000`
@@ -195,7 +171,7 @@ CREATE TABLE transactions (
 
 ### Local Development
 ```bash
-python start.py
+node production_server.js
 ```
 
 ### Production Deployment
@@ -210,13 +186,13 @@ python start.py
 
 ### Docker Deployment
 ```dockerfile
-FROM python:3.9-slim
+FROM node:18-slim
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
+COPY backend/package*.json ./
+RUN npm ci --omit=dev
+COPY backend .
 EXPOSE 8000
-CMD ["python", "start.py"]
+CMD ["node", "production_server.js"]
 ```
 
 ## 🔒 Security Considerations

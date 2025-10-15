@@ -5,13 +5,43 @@ import { initialSiteImages } from '../../constants';
 // Upload to backend and return absolute URL
 const uploadToBackend = async (file: File): Promise<string> => {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    // Client-side compress using canvas to webp (max 1200px)
+    const compress = (file: File) => new Promise<Blob>((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const maxDim = 1200;
+            let { width, height } = img;
+            if (width > height && width > maxDim) {
+                height = Math.round((maxDim / width) * height);
+                width = maxDim;
+            } else if (height > width && height > maxDim) {
+                width = Math.round((maxDim / height) * width);
+                height = maxDim;
+            } else if (width > maxDim) {
+                width = maxDim; height = maxDim;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return resolve(file);
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob((blob) => resolve(blob || file), 'image/webp', 0.8);
+        };
+        img.src = URL.createObjectURL(file);
+    });
     const fd = new FormData();
-    fd.append('file', file);
+    const blob = await compress(file);
+    const webpFile = new File([blob], (file.name || 'image').replace(/\.[^.]+$/, '.webp'), { type: 'image/webp' });
+    fd.append('file', webpFile);
     const res = await fetch(`${apiUrl}/api/upload`, { method: 'POST', body: fd });
     const json = await res.json();
     if (!json?.success || !json?.url) throw new Error('Upload failed');
-    // Return full URL for direct use in <img>
-    return `${apiUrl}${json.url}`;
+    const url: string = json.url;
+    // If backend already returned absolute URL (Cloudinary or absolute host), use it directly
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    // Otherwise, prefix with API host
+    const withSlash = url.startsWith('/') ? url : `/${url}`;
+    return `${apiUrl}${withSlash}`;
 }
 
 interface ImageManagerProps {
@@ -36,11 +66,17 @@ export const ImageManager: React.FC<ImageManagerProps> = ({ currentImages, onUpd
             // preview quickly
             const previewUrl = URL.createObjectURL(file);
             setPreviews(prev => ({ ...prev, [key]: previewUrl }));
-            // upload and set persistent URL
+            // upload and set persistent URL (data URL or absolute URL)
             try {
                 const uploadedUrl = await uploadToBackend(file);
                 setImages(prev => ({ ...prev, [key]: uploadedUrl }));
                 setPreviews(prev => ({ ...prev, [key]: uploadedUrl }));
+                // also persist to localStorage immediately for robustness
+                try {
+                    const current = JSON.parse(localStorage.getItem('siteImages') || '{}');
+                    const updated = { ...current, [key]: uploadedUrl };
+                    localStorage.setItem('siteImages', JSON.stringify(updated));
+                } catch {}
             } catch (err) {
                 console.error('Upload failed', err);
             }

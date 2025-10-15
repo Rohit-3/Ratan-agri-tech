@@ -2,13 +2,43 @@ import React, { useState } from 'react';
 import { categories } from '../../constants';
 import { Product, ProductCategory } from '../../types';
 
-// Helper to convert file to base64
-const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
-});
+// Upload to backend and return absolute URL
+const uploadToBackend = async (file: File): Promise<string> => {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    // Compress to webp (max 1200px)
+    const compress = (file: File) => new Promise<Blob>((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const maxDim = 1200;
+            let { width, height } = img as HTMLImageElement;
+            if (width > height && width > maxDim) {
+                height = Math.round((maxDim / width) * height);
+                width = maxDim;
+            } else if (height > width && height > maxDim) {
+                width = Math.round((maxDim / height) * width);
+                height = maxDim;
+            } else if (width > maxDim) {
+                width = maxDim; height = maxDim;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return resolve(file);
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob((blob) => resolve(blob || file), 'image/webp', 0.8);
+        };
+        img.src = URL.createObjectURL(file);
+    });
+    const fd = new FormData();
+    const blob = await compress(file);
+    const webpFile = new File([blob], (file.name || 'image').replace(/\.[^.]+$/, '.webp'), { type: 'image/webp' });
+    fd.append('file', webpFile);
+    const res = await fetch(`${apiUrl}/api/upload`, { method: 'POST', body: fd });
+    const json = await res.json();
+    if (!json?.success || !json?.url) throw new Error('Upload failed');
+    const url: string = json.url;
+    return url.startsWith('http') ? url : `${apiUrl}${url.startsWith('/') ? url : `/${url}`}`;
+};
 
 interface ProductFormProps {
     onAddProduct: (product: Omit<Product, 'id'>) => void;
@@ -38,13 +68,20 @@ const ProductForm: React.FC<ProductFormProps> = ({ onAddProduct }) => {
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            const base64 = await toBase64(file);
-            setFormState(prev => ({ ...prev, image: base64 }));
-            setImagePreview(base64);
+            // preview locally
+            const previewUrl = URL.createObjectURL(file);
+            setImagePreview(previewUrl);
+            try {
+                const uploadedUrl = await uploadToBackend(file);
+                setFormState(prev => ({ ...prev, image: uploadedUrl }));
+                setImagePreview(uploadedUrl);
+            } catch (err) {
+                console.error('Upload failed', err);
+            }
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
         // Convert specifications string to object
@@ -56,14 +93,42 @@ const ProductForm: React.FC<ProductFormProps> = ({ onAddProduct }) => {
             return acc;
         }, {} as { [key: string]: string });
 
-        onAddProduct({
-            name: formState.name,
-            category: formState.category,
-            image: formState.image,
-            description: formState.description,
-            specifications: specsObject,
-            price: Number(formState.price) || undefined,
-        });
+        // Try backend create; fall back to local handler
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        try {
+            const resp = await fetch(`${apiUrl}/api/products`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: formState.name,
+                    description: formState.description,
+                    price: Number(formState.price) || 0,
+                    image_url: formState.image,
+                    category: formState.category,
+                }),
+            });
+            const json = await resp.json();
+            if (!json?.success) throw new Error('Create failed');
+            // Mirror locally so UI and localStorage persist image/data
+            const created = json.data;
+            onAddProduct({
+                name: created?.name ?? formState.name,
+                category: created?.category ?? formState.category,
+                image: created?.image_url ?? formState.image,
+                description: created?.description ?? formState.description,
+                specifications: specsObject,
+                price: typeof created?.price === 'number' ? created.price : (Number(formState.price) || undefined),
+            });
+        } catch (err) {
+            onAddProduct({
+                name: formState.name,
+                category: formState.category,
+                image: formState.image,
+                description: formState.description,
+                specifications: specsObject,
+                price: Number(formState.price) || undefined,
+            });
+        }
 
         // Reset form and show success message
         setFormState(initialFormState);

@@ -17,6 +17,64 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     onSelectProductToEdit
 }) => {
     const [activeTab, setActiveTab] = useState<'products' | 'images' | 'qr-codes' | 'payments'>('products');
+    const [toast, setToast] = useState<string>('');
+    const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+
+    const handleExport = () => {
+        const data = { products, siteImages };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `backup-${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+        showToast('Backup exported');
+    };
+
+    const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            const text = await file.text();
+            const json = JSON.parse(text);
+            const apiUrl = (import.meta as any).env.VITE_API_URL || window.location.origin;
+            // Restore siteImages
+            if (json.siteImages) {
+                await fetch(`${apiUrl}/api/site-images`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+                    logo: json.siteImages.logo,
+                    hero: json.siteImages.hero,
+                    about: json.siteImages.about,
+                    qr_code: json.siteImages.qrCode
+                })});
+                onUpdateSiteImages(json.siteImages);
+                try { localStorage.setItem('siteImages', JSON.stringify(json.siteImages)); } catch {}
+            }
+            // Restore products
+            if (Array.isArray(json.products)) {
+                for (const p of json.products) {
+                    try {
+                        const resp = await fetch(`${apiUrl}/api/products`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+                            name: p.name,
+                            description: p.description,
+                            price: typeof p.price === 'number' ? p.price : 0,
+                            image_url: p.image,
+                            category: p.category,
+                        })});
+                        const rj = await resp.json();
+                        if (!rj?.success) throw new Error('create failed');
+                        onAddProduct({ name: p.name, category: p.category, image: p.image, description: p.description, specifications: p.specifications || {}, price: p.price });
+                    } catch {
+                        onAddProduct({ name: p.name, category: p.category, image: p.image, description: p.description, specifications: p.specifications || {}, price: p.price });
+                    }
+                }
+            }
+            showToast('Backup imported');
+        } catch {
+            showToast('Import failed');
+        } finally {
+            (e.target as HTMLInputElement).value = '';
+        }
+    };
 
     return (
         <div className="bg-gray-100 min-h-screen">
@@ -30,6 +88,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             </header>
 
             <main className="container mx-auto p-6 md:p-8">
+                {toast && (
+                    <div className="mb-4 p-3 rounded bg-green-50 text-green-800 border border-green-200">{toast}</div>
+                )}
                 {/* Static Hero and Logo Preview */}
                 <div className="bg-white rounded-lg shadow-md mb-6 p-6">
                     <h2 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Site Images Preview</h2>
@@ -58,6 +119,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                             </div>
                         </div>
                     </div>
+                </div>
+
+                {/* Backup & Restore */}
+                <div className="bg-white rounded-lg shadow-md mb-6 p-6">
+                    <h3 className="text-xl font-bold text-gray-800 mb-3">Backup & Restore</h3>
+                    <div className="flex items-center gap-4">
+                        <button onClick={handleExport} className="px-4 py-2 border border-black rounded hover:bg-gray-50 font-extrabold">Export JSON</button>
+                        <label className="px-4 py-2 border border-black rounded cursor-pointer font-extrabold">
+                            Import JSON
+                            <input type="file" accept="application/json" onChange={handleImport} className="hidden" />
+                        </label>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">Exports both products and site images. Importing will merge into current data.</p>
                 </div>
 
                 {/* Navigation Tabs */}

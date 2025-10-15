@@ -2,13 +2,42 @@ import React, { useState, useEffect } from 'react';
 import { categories } from '../../constants';
 import { Product, ProductCategory, EditProductModalProps } from '../../types';
 
-// Helper to convert file to base64
-const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
-});
+// Upload to backend and return absolute URL
+const uploadToBackend = async (file: File): Promise<string> => {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const compress = (file: File) => new Promise<Blob>((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const maxDim = 1200;
+            let { width, height } = img as HTMLImageElement;
+            if (width > height && width > maxDim) {
+                height = Math.round((maxDim / width) * height);
+                width = maxDim;
+            } else if (height > width && height > maxDim) {
+                width = Math.round((maxDim / height) * width);
+                height = maxDim;
+            } else if (width > maxDim) {
+                width = maxDim; height = maxDim;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return resolve(file);
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob((blob) => resolve(blob || file), 'image/webp', 0.8);
+        };
+        img.src = URL.createObjectURL(file);
+    });
+    const fd = new FormData();
+    const blob = await compress(file);
+    const webpFile = new File([blob], (file.name || 'image').replace(/\.[^.]+$/, '.webp'), { type: 'image/webp' });
+    fd.append('file', webpFile);
+    const res = await fetch(`${apiUrl}/api/upload`, { method: 'POST', body: fd });
+    const json = await res.json();
+    if (!json?.success || !json?.url) throw new Error('Upload failed');
+    const url: string = json.url;
+    return url.startsWith('http') ? url : `${apiUrl}${url.startsWith('/') ? url : `/${url}`}`;
+};
 
 interface FormState {
     name: string;
@@ -53,13 +82,19 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, onUpdatePr
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            const base64 = await toBase64(file);
-            setFormState(prev => prev ? { ...prev, image: base64 } : null);
-            setImagePreview(base64);
+            const previewUrl = URL.createObjectURL(file);
+            setImagePreview(previewUrl);
+            try {
+                const uploadedUrl = await uploadToBackend(file);
+                setFormState(prev => prev ? { ...prev, image: uploadedUrl } : null);
+                setImagePreview(uploadedUrl);
+            } catch (err) {
+                console.error('Upload failed', err);
+            }
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formState) return;
 
@@ -81,7 +116,34 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, onUpdatePr
             price: Number(formState.price) || undefined,
         };
 
-        onUpdateProduct(updatedProduct);
+        try {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const resp = await fetch(`${apiUrl}/api/products/${product.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: formState.name,
+                    description: formState.description,
+                    price: Number(formState.price) || 0,
+                    image_url: formState.image,
+                    category: formState.category,
+                }),
+            });
+            const json = await resp.json();
+            if (!resp.ok || !json?.success) throw new Error('Update failed');
+            const updated = json.data;
+            onUpdateProduct({
+                ...product,
+                name: updated?.name ?? formState.name,
+                category: updated?.category ?? formState.category,
+                image: updated?.image_url ?? formState.image,
+                description: updated?.description ?? formState.description,
+                specifications: specsObject,
+                price: typeof updated?.price === 'number' ? updated.price : (Number(formState.price) || undefined),
+            });
+        } catch (err) {
+            onUpdateProduct(updatedProduct);
+        }
     };
     
     const productCategories = categories.filter(c => c !== ProductCategory.All);
