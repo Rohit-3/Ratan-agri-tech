@@ -179,6 +179,18 @@ function computeETagFromObject(obj) {
 function absolutizeForReq(req, value) {
   try {
     if (!value || typeof value !== 'string') return value;
+    // Rewrite absolute localhost URLs to current origin
+    if ((value.startsWith('http://') || value.startsWith('https://')) && value.includes('localhost')) {
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+      const host = req.get('host');
+      try {
+        const url = new URL(value);
+        return `${protocol}://${host}${url.pathname}${url.search || ''}`;
+      } catch {
+        // fallthrough to return value as-is
+      }
+      return value;
+    }
     if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:')) return value;
     const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
     const host = req.get('host');
