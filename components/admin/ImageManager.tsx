@@ -4,7 +4,7 @@ import { initialSiteImages } from '../../constants';
 
 // Upload to backend and return absolute URL
 const uploadToBackend = async (file: File): Promise<string> => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
     // Client-side compress using canvas to webp (max 1200px)
     const compress = (file: File) => new Promise<Blob>((resolve) => {
         const img = new Image();
@@ -86,7 +86,7 @@ export const ImageManager: React.FC<ImageManagerProps> = ({ currentImages, onUpd
     const handleSave = async () => {
         try {
             // Persist to backend site-images
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
             const res = await fetch(`${apiUrl}/api/site-images`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

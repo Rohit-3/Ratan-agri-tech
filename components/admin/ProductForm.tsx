@@ -4,7 +4,7 @@ import { Product, ProductCategory } from '../../types';
 
 // Upload to backend and return absolute URL
 const uploadToBackend = async (file: File): Promise<string> => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
     // Compress to webp (max 1200px)
     const compress = (file: File) => new Promise<Blob>((resolve) => {
         const img = new Image();
@@ -94,7 +94,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onAddProduct }) => {
         }, {} as { [key: string]: string });
 
         // Try backend create; fall back to local handler
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
         try {
             const resp = await fetch(`${apiUrl}/api/products`, {
                 method: 'POST',

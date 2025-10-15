@@ -98,7 +98,7 @@ const ProductionPaymentSystem: React.FC<ProductionPaymentSystemProps> = ({ produ
     setError('');
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
       const response = await fetch(`${apiUrl}/api/create-payment`, {
         method: 'POST',
         headers: {
@@ -127,7 +127,7 @@ const ProductionPaymentSystem: React.FC<ProductionPaymentSystemProps> = ({ produ
     setError('');
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
       const response = await fetch(`${apiUrl}/api/confirm-payment`, {
         method: 'POST',
         headers: {
@@ -171,7 +171,7 @@ const ProductionPaymentSystem: React.FC<ProductionPaymentSystemProps> = ({ produ
 
   const downloadInvoice = () => {
     if (paymentResponse?.invoice_id) {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
       window.open(`${apiUrl}/api/invoice/${paymentResponse.invoice_id}`, '_blank');
     }
   };

@@ -4,7 +4,7 @@ import { Product, ProductCategory, EditProductModalProps } from '../../types';
 
 // Upload to backend and return absolute URL
 const uploadToBackend = async (file: File): Promise<string> => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
     const compress = (file: File) => new Promise<Blob>((resolve) => {
         const img = new Image();
         img.onload = () => {
@@ -117,7 +117,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, onUpdatePr
         };
 
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
             const resp = await fetch(`${apiUrl}/api/products/${product.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
