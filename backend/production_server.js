@@ -5,6 +5,7 @@ const sqlite3 = require('sqlite3').verbose();
 const qrcode = require('qrcode');
 const path = require('path');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 8000;
@@ -24,6 +25,25 @@ app.use((req, res, next) => {
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 app.use('/uploads', express.static(uploadsDir));
+
+// Chatbot API router (with fallback endpoints to avoid 404s in dev)
+let chatbotMounted = false;
+try {
+  const chatbotRouter = require('./chatbot/api/router');
+  app.use('/api', chatbotRouter);
+  chatbotMounted = true;
+} catch (e) {
+  console.warn('Chatbot router not available yet:', e?.message || e);
+}
+if (!chatbotMounted) {
+  app.get('/api/knowledge', (_req, res) => {
+    res.json({ success: true, data: { pages: [{ url: '/', title: 'home' }] } });
+  });
+  app.post('/api/chat', (req, res) => {
+    const message = (req.body && req.body.message) || '';
+    res.json({ success: true, reply: `Echo: ${message}`, intent: 'fallback' });
+  });
+}
 
 // Simple naive rate limit for non-GET requests
 let recentHits = 0;
@@ -359,6 +379,50 @@ app.post('/api/create-payment', async (req, res) => {
   } catch (error) {
     console.error('Payment creation error:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Newsletter subscribe route: sends notification email to business
+app.post('/api/subscribe', async (req, res) => {
+  try {
+    const email = (req.body && req.body.email || '').toString().trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ success: false, error: 'Valid email is required' });
+    }
+
+    const business = await getBusinessSettings().catch(() => ({ business_name: 'Ratan Agri Tech', business_email: 'ratanagritech@gmail.com' }));
+    const toAddress = business.business_email || process.env.SUBSCRIBE_TO || 'ratanagritech@gmail.com';
+
+    // Configure transporter if SMTP provided; otherwise fallback to console log only
+    let transporter = null;
+    if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+      transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587,
+        secure: !!process.env.SMTP_SECURE && process.env.SMTP_SECURE !== 'false',
+        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+      });
+    }
+
+    const subject = `New newsletter subscription: ${email}`;
+    const text = `A new user subscribed to the newsletter.\n\nEmail: ${email}\nTime: ${new Date().toISOString()}`;
+
+    if (transporter) {
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || `no-reply@${(req.get('host') || 'ratanagritech.com').replace(/:.+$/, '')}`,
+        to: toAddress,
+        subject,
+        text
+      });
+      console.log('Subscription email sent to', toAddress, 'for', email);
+    } else {
+      console.log('[SUBSCRIBE] (no SMTP configured) ->', { to: toAddress, subject, text });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Subscribe error:', err);
+    res.status(500).json({ success: false, error: 'Failed to process subscription' });
   }
 });
 

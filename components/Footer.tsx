@@ -31,10 +31,7 @@ const Footer: React.FC = () => {
 
           <div>
             <h4 className="font-semibold mb-2">Newsletter</h4>
-            <form>
-              <input type="email" placeholder="Email" className="w-full px-3 py-2 rounded bg-gray-700 text-white" />
-              <button className="mt-2 w-full py-2 bg-accent text-gray-900 rounded">Subscribe</button>
-            </form>
+            <NewsletterForm />
           </div>
         </div>
 
@@ -45,3 +42,60 @@ const Footer: React.FC = () => {
 };
 
 export default Footer;
+
+const NewsletterForm: React.FC = () => {
+  const [email, setEmail] = React.useState('');
+  const [status, setStatus] = React.useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [message, setMessage] = React.useState<string>('');
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setStatus('error');
+      setMessage('Please enter a valid email address.');
+      return;
+    }
+    setStatus('loading');
+    setMessage('');
+    try {
+      const base = (import.meta as any)?.env?.VITE_API_URL || '';
+      const res = await fetch(`${base}/api/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) {
+        throw new Error(data.error || 'Subscription failed');
+      }
+      setStatus('success');
+      setMessage('Thanks for subscribing!');
+      setEmail('');
+    } catch (err: any) {
+      setStatus('error');
+      setMessage(err?.message || 'Something went wrong. Please try again.');
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="email"
+        placeholder="Email"
+        className="w-full px-3 py-2 rounded bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <button
+        type="submit"
+        disabled={status === 'loading'}
+        className="mt-2 w-full py-2 bg-white text-gray-900 font-extrabold rounded hover:bg-gray-100 disabled:opacity-70 disabled:cursor-not-allowed"
+      >
+        {status === 'loading' ? 'Subscribing…' : 'Subscribe'}
+      </button>
+      {message ? (
+        <div className={`mt-2 text-sm ${status === 'error' ? 'text-red-400' : 'text-green-400'}`}>{message}</div>
+      ) : null}
+    </form>
+  );
+};

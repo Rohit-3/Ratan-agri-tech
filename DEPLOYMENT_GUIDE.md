@@ -211,6 +211,36 @@ CMD ["python", "start.py"]
 - [ ] **Inventory management**
 - [ ] **Order tracking**
 
+## 📬 Newsletter Subscription Email (SMTP)
+
+Your site footer includes a newsletter subscription form that posts to `/api/subscribe`.
+
+Backend supports SMTP via environment variables. If SMTP is not configured, it will log the email to the server console instead of sending.
+
+Environment variables (set on your host):
+
+- `SMTP_HOST` – e.g., `smtp.gmail.com`
+- `SMTP_PORT` – e.g., `587`
+- `SMTP_SECURE` – `true` to use TLS, else `false`
+- `SMTP_USER` – SMTP username (for Gmail, your full Gmail address)
+- `SMTP_PASS` – SMTP/app password (for Gmail, use an App Password)
+- `SMTP_FROM` – Optional, sender address. Defaults to `no-reply@<host>`
+- `SUBSCRIBE_TO` – Optional, recipient. Defaults to `ratanagritech@gmail.com` or the email in business settings
+
+API endpoint:
+
+- `POST /api/subscribe` – Body: `{ "email": "user@example.com" }` → returns `{ success: true }` on success
+
+Gmail setup tip: enable 2FA and create an App Password, then use it for `SMTP_PASS`.
+
+## 💬 Chatbot Frontend Widget
+
+The site includes a floating chat widget available on all pages. It connects to backend endpoints under `/api`.
+
+- Widget file: `components/ChatWidget.tsx`
+- Backend routes: `POST /api/chat`, `GET /api/knowledge`
+- Configure API base (optional): set `VITE_API_URL` in frontend env; defaults to same origin.
+
 ## 🆘 Troubleshooting
 
 ### Common Issues:

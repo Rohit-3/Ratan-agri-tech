@@ -5,6 +5,7 @@ import Products from './components/Products';
 import About from './components/About';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
+import ChatWidget from './components/ChatWidget';
 import AdminPanel from './components/admin/AdminPanel';
 import EditProductModal from './components/admin/EditProductModal';
 import PaymentModal from './components/PaymentModal';
@@ -278,6 +279,7 @@ const App: React.FC = () => {
                 {renderMainContent()}
             </main>
             <Footer />
+            <ChatWidget />
             <PaymentModal 
                 product={productToBuy}
                 siteImages={siteImages}
