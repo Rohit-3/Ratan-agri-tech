@@ -175,6 +175,20 @@ function computeETagFromObject(obj) {
   }
 }
 
+// Build absolute URL for paths like /uploads/..., pass through absolute and data URLs
+function absolutizeForReq(req, value) {
+  try {
+    if (!value || typeof value !== 'string') return value;
+    if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:')) return value;
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.get('host');
+    const withSlash = value.startsWith('/') ? value : `/${value}`;
+    return `${protocol}://${host}${withSlash}`;
+  } catch {
+    return value;
+  }
+}
+
 function generateUPILink(merchantUPI, merchantName, amount, invoiceId) {
   const merchantNameEncoded = merchantName.replace(/\s+/g, '+');
   return `upi://pay?pa=${merchantUPI}&pn=${merchantNameEncoded}&am=${amount}&cu=INR&tn=${invoiceId}`;
@@ -246,14 +260,7 @@ app.get('/api/site-images', async (req, res) => {
     const row = await dbGet('SELECT * FROM site_images WHERE id = ?', [1]);
     const data = row || {};
     // Expand any relative paths (e.g., /uploads/...) to absolute URLs; pass through data URLs untouched
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-    const host = req.get('host');
-    const absolutize = (value) => {
-      if (!value || typeof value !== 'string') return value;
-      if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:')) return value;
-      const withSlash = value.startsWith('/') ? value : `/${value}`;
-      return `${protocol}://${host}${withSlash}`;
-    };
+    const absolutize = (v) => absolutizeForReq(req, v);
     const response = {
       ...data,
       logo: absolutize(data.logo),
@@ -408,7 +415,11 @@ app.get('/api/dashboard', async (req, res) => {
 // Products CRUD
 app.get('/api/products', async (req, res) => {
   try {
-    const products = await dbAll('SELECT * FROM products ORDER BY created_at DESC', []);
+    const rows = await dbAll('SELECT * FROM products ORDER BY created_at DESC', []);
+    const products = rows.map((p) => ({
+      ...p,
+      image_url: absolutizeForReq(req, p.image_url),
+    }));
     const etag = computeETagFromObject(products);
     if (etag && req.headers['if-none-match'] === etag) {
       res.status(304).end();
@@ -430,7 +441,8 @@ app.post('/api/products', async (req, res) => {
     const sql = `INSERT INTO products (name, description, price, image_url, category) VALUES (?,?,?,?,?)`;
     const result = await dbRun(sql, [name, description ?? null, price, image_url ?? null, category ?? null]);
     const created = await dbGet('SELECT * FROM products WHERE id = ?', [result.lastID]);
-    res.json({ success: true, data: created });
+    const response = created ? { ...created, image_url: absolutizeForReq(req, created.image_url) } : created;
+    res.json({ success: true, data: response });
   } catch (err) {
     console.error('Product create error:', err);
     res.status(500).json({ success: false, error: 'DB error' });
@@ -453,7 +465,8 @@ app.put('/api/products/:id', async (req, res) => {
     const result = await dbRun(sql, [name ?? null, description ?? null, typeof price === 'number' ? price : null, image_url ?? null, category ?? null, id]);
     if (!result.changes) return res.status(404).json({ success: false, error: 'Product not found' });
     const product = await dbGet('SELECT * FROM products WHERE id = ?', [id]);
-    res.json({ success: true, data: product });
+    const response = product ? { ...product, image_url: absolutizeForReq(req, product.image_url) } : product;
+    res.json({ success: true, data: response });
   } catch (err) {
     console.error('Product update error:', err);
     res.status(500).json({ success: false, error: 'DB error' });
@@ -474,12 +487,13 @@ app.delete('/api/products/:id', async (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
+  const baseUrl = process.env.PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
   console.log('🚀 Ratan Agri Tech Payment System v2.0.0');
   console.log('💳 Production-Ready UPI Payment + GST Invoice System');
-  console.log('=' .repeat(60));
-  console.log(`🌐 Server running on http://localhost:${PORT}`);
-  console.log('📊 API Documentation: http://localhost:8000/api/docs');
-  console.log('🔧 Business Settings: http://localhost:8000/api/business-settings');
-  console.log('=' .repeat(60));
+  console.log('='.repeat(60));
+  console.log(`🌐 Server running at ${baseUrl}`);
+  console.log(`📊 API Root: ${baseUrl}/`);
+  console.log(`🔧 Business Settings: ${baseUrl}/api/business-settings`);
+  console.log('='.repeat(60));
 });
 

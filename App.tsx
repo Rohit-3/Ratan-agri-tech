@@ -50,11 +50,17 @@ const App: React.FC = () => {
                 const json = await res.json();
                 if (json?.success && Array.isArray(json.data)) {
                     // Normalize to Product[] used by UI
+                    const toAbsolute = (img: string | undefined) => {
+                        if (!img) return img;
+                        if (img.startsWith('http') || img.startsWith('data:')) return img;
+                        const path = img.startsWith('/') ? img : `/${img}`;
+                        return `${apiUrl}${path}`;
+                    };
                     const backendProducts = json.data.map((p: any) => ({
                         id: p.id ?? Date.now() + Math.random(),
                         name: p.name,
                         category: p.category,
-                        image: p.image_url,
+                        image: toAbsolute(p.image_url),
                         description: p.description,
                         specifications: {},
                         price: typeof p.price === 'number' ? p.price : undefined,
@@ -85,6 +91,19 @@ const App: React.FC = () => {
             const storedProducts = localStorage.getItem('products');
             if (storedProducts) {
                 const parsed = JSON.parse(storedProducts);
+                // Sanitize any localhost or /uploads images to current origin
+                const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
+                const needsFix = (img: unknown) => typeof img === 'string' && (img.includes('localhost') || img.startsWith('/uploads'));
+                const fixed = Array.isArray(parsed) ? parsed.map((p: any) => {
+                    if (needsFix(p?.image)) {
+                        const path = (p.image as string).startsWith('/') ? p.image : `/${p.image}`;
+                        return { ...p, image: `${apiUrl}${path}` };
+                    }
+                    return p;
+                }) : parsed;
+                if (fixed !== parsed) {
+                    localStorage.setItem('products', JSON.stringify(fixed));
+                }
                 const targetNames = new Set(initialProducts.map(p => p.name));
                 const invalidList = !Array.isArray(parsed) || parsed.length !== initialProducts.length || parsed.some((p: any) => !p?.name || !targetNames.has(p.name));
                 if (invalidList) {

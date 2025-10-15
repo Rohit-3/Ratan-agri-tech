@@ -22,12 +22,38 @@ const QRCodeManager: React.FC = () => {
     is_active: true
   });
 
-  // Load QR codes from localStorage
+  // Load QR codes from localStorage and hydrate from backend site-images if available
   useEffect(() => {
-    const savedQRCodes = localStorage.getItem('admin_qr_codes');
-    if (savedQRCodes) {
-      setQrCodes(JSON.parse(savedQRCodes));
-    }
+    try {
+      const savedQRCodes = localStorage.getItem('admin_qr_codes');
+      if (savedQRCodes) {
+        setQrCodes(JSON.parse(savedQRCodes));
+      }
+    } catch {}
+
+    // Also try to fetch current qr_code from backend so Render cold starts or
+    // ephemeral storage don't blank the QR image
+    (async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
+        const res = await fetch(`${apiUrl}/api/site-images`);
+        const json = await res.json();
+        const qr = json?.data?.qr_code as string | undefined;
+        if (qr) {
+          const absolute = qr.startsWith('http') || qr.startsWith('data:')
+            ? qr
+            : `${apiUrl}${qr.startsWith('/') ? qr : `/${qr}`}`;
+          const existing = (codes: QRCode[]) => codes.find(c => c.id === 'server_qr');
+          setQrCodes(prev => {
+            const next: QRCode[] = existing(prev)
+              ? prev.map(c => c.id === 'server_qr' ? { ...c, qr_code_url: absolute } : c)
+              : [{ id: 'server_qr', name: 'Server QR', upi_id: '', qr_code_url: absolute, is_active: true, created_at: new Date().toISOString() }, ...prev];
+            try { localStorage.setItem('admin_qr_codes', JSON.stringify(next)); } catch {}
+            return next;
+          });
+        }
+      } catch {}
+    })();
   }, []);
 
   // Allow external button in AdminPanel to open the upload form
@@ -82,7 +108,11 @@ const QRCodeManager: React.FC = () => {
         });
         const uploadJson = await uploadRes.json();
         if (!uploadJson.success) throw new Error('Upload failed');
-        uploadedUrl = uploadJson.url; // e.g. /uploads/filename.png
+        // Prefer absolute URL so it survives different origins
+        const rawUrl = uploadJson.url as string; // e.g. /uploads/filename.png
+        uploadedUrl = rawUrl.startsWith('http') || rawUrl.startsWith('data:')
+          ? rawUrl
+          : `${apiUrl}${rawUrl.startsWith('/') ? rawUrl : `/${rawUrl}`}`;
       }
 
       // 2) Save as site image (qr_code)
@@ -90,6 +120,7 @@ const QRCodeManager: React.FC = () => {
       const saveRes = await fetch(`${apiUrl}/api/site-images`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // Save relative path if we uploaded relative, otherwise pass absolute
         body: JSON.stringify({ qr_code: uploadedUrl })
       });
       const saveJson = await saveRes.json();
