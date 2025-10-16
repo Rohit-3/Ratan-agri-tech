@@ -39,7 +39,7 @@ router.post('/chat', async (req, res) => {
     const { message = '', session_id = '', last_path = '/' } = req.body || {};
     const sess = getSession(session_id);
     if (last_path) sess.lastPath = last_path;
-    const result = engine.respond(message, { lastPath: sess.lastPath });
+    const result = engine.respond(message, { graph: GRAPH, kb: KB, session: sess });
     sess.history.push({ role: 'user', text: message });
     sess.history.push({ role: 'bot', text: result.reply });
     const suggestions = suggestForPath(sess.lastPath || '/');
